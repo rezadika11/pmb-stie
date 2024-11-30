@@ -1,0 +1,19 @@
+.toast-success {
+    background-color: #28a745 !important; /* Warna hijau */
+    color: white !important; /* Warna teks */
+}
+
+.toast-error {
+    background-color: #dc3545 !important; /* Warna merah */
+    color: white !important; /* Warna teks */
+}
+
+.toast-info {
+    background-color: #17a2b8 !important; /* Warna biru */
+    color: white !important; /* Warna teks */
+}
+
+.toast-warning {
+    background-color: #ffc107 !important; /* Warna kuning */
+    color: black !important; /* Warna teks */
+}
