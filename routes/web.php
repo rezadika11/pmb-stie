@@ -4,6 +4,7 @@ use App\Http\Controllers\Backend\BannerController;
 use App\Http\Controllers\Backend\BrosurController;
 use App\Http\Controllers\Backend\ContactController;
 use App\Http\Controllers\Backend\DashboardController;
+use App\Http\Controllers\Backend\FormulirController;
 use App\Http\Controllers\Backend\PendaftaranController;
 use App\Http\Controllers\Backend\RegistrasiController;
 use App\Http\Controllers\Frontend\BrosurController as FrontendBrosurController;
@@ -14,53 +15,71 @@ use App\Http\Controllers\Frontend\RegistrasiController as FrontendRegistrasiCont
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-// Route::get('/dashboard', function () {
-//     return view('dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+});
 
-    Route::prefix('admin')->group(function () {
-        Route::prefix('pendaftaran')->controller(PendaftaranController::class)->name('pendaftaran.')->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::get('/tambah', 'create')->name('create');
-            Route::post('/store', 'store')->name('store');
-            Route::get('/edit/{id}', 'edit')->name('edit');
-            Route::post('/update/{id}', 'update')->name('update');
-            Route::delete('/{id}', 'destroy')->name('destroy');
-            Route::post('/upload/image', 'uploadImage')->name('image');
-            Route::get('/datatable', 'datatable')->name('datatable');
-        });
+Route::prefix('superadmin')->middleware(['auth', 'role:superadmin'])->group(function () {
+    Route::prefix('pendaftaran')->controller(PendaftaranController::class)->name('pendaftaran.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/tambah', 'create')->name('create');
+        Route::post('/store', 'store')->name('store');
+        Route::get('/edit/{id}', 'edit')->name('edit');
+        Route::post('/update/{id}', 'update')->name('update');
+        Route::delete('/{id}', 'destroy')->name('destroy');
+        Route::post('/upload/image', 'uploadImage')->name('image');
+        Route::get('/datatable', 'datatable')->name('datatable');
+    });
 
-        Route::prefix('registrasi')->controller(RegistrasiController::class)->name('registrasi.')->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::get('/tambah', 'create')->name('create');
-            Route::post('/store', 'store')->name('store');
-            Route::get('/edit/{id}', 'edit')->name('edit');
-            Route::post('/update/{id}', 'update')->name('update');
-            Route::delete('/{id}', 'destroy')->name('destroy');
-            Route::post('/upload/image', 'uploadImage')->name('image');
-            Route::get('/datatable', 'datatable')->name('datatable');
-        });
+    Route::prefix('registrasi')->controller(RegistrasiController::class)->name('registrasi.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/tambah', 'create')->name('create');
+        Route::post('/store', 'store')->name('store');
+        Route::get('/edit/{id}', 'edit')->name('edit');
+        Route::post('/update/{id}', 'update')->name('update');
+        Route::delete('/{id}', 'destroy')->name('destroy');
+        Route::post('/upload/image', 'uploadImage')->name('image');
+        Route::get('/datatable', 'datatable')->name('datatable');
+    });
 
-        Route::prefix('brosur')->controller(BrosurController::class)->name('brosur.')->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::put('/{id}', 'update')->name('update');
-        });
+    Route::prefix('brosur')->controller(BrosurController::class)->name('brosur.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::put('/{id}', 'update')->name('update');
+    });
 
-        Route::prefix('banner')->controller(BannerController::class)->name('banner.')->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::put('/{id}', 'update')->name('update');
-        });
+    Route::prefix('banner')->controller(BannerController::class)->name('banner.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::put('/{id}', 'update')->name('update');
+    });
 
-        Route::prefix('kontak')->controller(ContactController::class)->name('kontak.')->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::put('/{id}', 'update')->name('update');
-        });
+    Route::prefix('kontak')->controller(ContactController::class)->name('kontak.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::put('/{id}', 'update')->name('update');
     });
 });
 
+// Route::middleware(['auth', 'role:admin'])->group(function () {
+//     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+// });
+
+Route::prefix('mhs')->middleware(['auth', 'role:mhs'])->group(function () {
+    Route::prefix('formulir')->controller(FormulirController::class)->name('formulir.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/get-kabupaten', 'getKabupaten')->name('getKabupaten');
+        Route::post('/get-kecamatan', 'getKecamatan')->name('getKecamatan');
+        Route::post('/get-desa', 'getDesa')->name('getDesa');
+        Route::post('/check-nik-uniquenessstep1', [FormulirController::class, 'checkNikUniquenessStep1'])->name('check.nik.checkNikUniquenessStep1');
+        Route::post('/simpan-step1', 'simpanStep1')->name('simpan.step1');
+        //Wilayah Ortu
+        Route::post('/get-kabupaten-ortu', 'getKabupatenOrtu')->name('getKabupatenOrtu');
+        Route::post('/get-kecamatan-ortu', 'getKecamatanOrtu')->name('getKecamatanOrtu');
+        Route::post('/get-desa-ortu', 'getDesaOrtu')->name('getDesaOrtu');
+        Route::post('/check-nik-ortu-uniqueness', [FormulirController::class, 'checkNikOrtuUniqueness'])
+            ->name('check.nik.ortu.uniqueness');
+        Route::post('/simpan-step2', 'simpanStep2')->name('simpan.step2');
+        Route::post('/simpan-step3', 'simpanStep3')->name('simpan.step3');
+    });
+});
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/pendaftaran/{slug}', [FrontendPendaftaranController::class, 'index'])->name('pendaftaran');

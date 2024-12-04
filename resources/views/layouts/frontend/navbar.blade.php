@@ -39,7 +39,7 @@
             Daftar
             <i class="bi bi-person-plus-fill ms-2"></i>
         </a>
-        <a class="btn btn-outline-secondary btn-custom-outline btn-sm" href="courses.html">
+        <a class="btn btn-outline-secondary btn-custom-outline btn-sm" href="{{ route('login') }}">
             Login
             <i class="bi bi-box-arrow-in-right ms-2"></i>
         </a>
