@@ -134,11 +134,17 @@
                                     </td>
                                 </tr>
                             </table>
-                            @if ($mhs->status_pembayaran == 1)
-                            <p class="text-primary">Silahkan download bukti pembayaran untuk proses daftar ulang</p>
-                            <a href="{{ route('formulir.downloadBuktiPembayaran', $pembayaran->id) }}" class="btn btn-sm btn-warning" target="_blank"><i class="bi bi-file-earmark-arrow-down"></i> Download Bukti Pendaftaran</a>
-                            @else
-                            <button id="btnModalBayar" class="btn btn-sm btn-primary"><i class="bi bi-file-earmark-arrow-up"></i> Upload Bukti Pembayaran</button>
+                            @if($mhs->status_pembayaran == 0)
+                                <button id="btnModalBayar" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-file-earmark-arrow-up"></i> Upload Bukti Pembayaran
+                                </button>
+                            @elseif($mhs->status_pembayaran == 1 && $mhs->status_daftar == 0)
+                                <p class="text-primary">Silahkan menunggu konfirmasi pendaftaran</p>
+                            @elseif($mhs->status_pembayaran == 1 && $mhs->status_daftar == 1)
+                                <p class="text-primary">Silahkan download bukti pembayaran untuk proses daftar ulang</p>
+                                <a href="{{ route('formulir.downloadBuktiPembayaran', $pembayaran->id) }}" class="btn btn-sm btn-warning" target="_blank">
+                                    <i class="bi bi-file-earmark-arrow-down"></i> Download Bukti Pendaftaran
+                                </a>
                             @endif
                         @else
                         @include('backend.mhs.step.nav')
