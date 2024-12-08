@@ -3,9 +3,10 @@
         Data Orang Tua
     </div>
     <div class="card-body">
-        @if(isset($mhs->id_ortu))
-        <input type="hidden" name="id_ortu" value="{{ $mhs->id_ortu }}">
-        @endif
+        {{-- @if(isset($mhs->id_ortu))
+        <input type="hidden" name="id_ortu" value="{{ $mhs->id_ortu ?? '' }}">
+        @endif --}}
+        <input type="hidden" name="id_ortu" value="{{ $ortu->id ?? '' }}">
         <input type="hidden" name="id_mahasiswa" value="{{ $mhs->id ?? '' }}">
         <div class="row">
             <div class="col-md-6">
@@ -39,13 +40,13 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label>Tanggal Lahir Ayah</label>
-                    <input type="date" class="form-control" name="tanggal_lahir_ayah" id="tanggal_lahir_ayah" value="{{ old('tanggal_lahir_ayah',$ortu->tanggal_lahir_ayah ?? '') }}" placeholder="Masukan Tanggal Lahir Ayah">
+                    <input type="text" id="date_ayah" class="form-control" name="tanggal_lahir_ayah" value="{{ old('tanggal_lahir_ayah',$ortu->tanggal_lahir_ayah ?? '') }}" placeholder="Masukan Tanggal Lahir Ayah" autocomplete="off">
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="form-group">
                     <label>Tanggal Lahir Ibu</label>
-                    <input type="date" class="form-control" name="tanggal_lahir_ibu" id="tanggal_lahir_ibu" value="{{ old('tanggal_lahir_ibu',$ortu->tanggal_lahir_ibu ?? '') }}" placeholder="Masukan Tanggal Lahir Ibu">
+                    <input type="text" id="date_ibu" class="form-control" name="tanggal_lahir_ibu"  value="{{ old('tanggal_lahir_ibu',$ortu->tanggal_lahir_ibu ?? '') }}" placeholder="Masukan Tanggal Lahir Ibu" autocomplete="off">
                 </div>
             </div>
         </div>
@@ -53,13 +54,23 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label>NIK Ayah</label>
-                    <input type="text" class="form-control" name="nik_ayah" id="nik_ayah" value="{{ old('nik_ayah',$ortu->nik_ayah ?? '') }}" placeholder="Masukan NIK Ayah">
+                    <input type="number" 
+                    class="form-control" 
+                    name="nik_ayah" 
+                    data-original-nik="{{ $ortu->nik_ayah ?? '' }}" 
+                    value="{{ old('nik_ayah', $ortu->nik_ayah ?? '') }}" 
+                    placeholder="Masukan NIK Ayah">
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="form-group">
                     <label>NIK Ibu</label>
-                    <input type="text" class="form-control" name="nik_ibu" id="nik_ibu" value="{{ old('nik_ibu',$ortu->nik_ibu ?? '') }}" placeholder="Masukan NIK Ibu">
+                   <input type="number" 
+                    class="form-control" 
+                    name="nik_ibu" 
+                    data-original-nik="{{ $ortu->nik_ibu ?? '' }}" 
+                    value="{{ old('nik_ibu', $ortu->nik_ibu ?? '') }}" 
+                    placeholder="Masukan NIK Ibu">
                 </div>
             </div>
         </div>

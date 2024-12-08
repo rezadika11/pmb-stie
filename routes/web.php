@@ -5,6 +5,7 @@ use App\Http\Controllers\Backend\BrosurController;
 use App\Http\Controllers\Backend\ContactController;
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\FormulirController;
+use App\Http\Controllers\Backend\Mhs\ProfilController;
 use App\Http\Controllers\Backend\PendaftaranController;
 use App\Http\Controllers\Backend\RegistrasiController;
 use App\Http\Controllers\Frontend\BrosurController as FrontendBrosurController;
@@ -63,6 +64,8 @@ Route::prefix('superadmin')->middleware(['auth', 'role:superadmin'])->group(func
 // });
 
 Route::prefix('mhs')->middleware(['auth', 'role:mhs'])->group(function () {
+    Route::get('/profile', [ProfilController::class, 'edit'])->name('profile');
+    Route::post('/update-profile', [ProfilController::class, 'update'])->name('update.profile');
     Route::prefix('formulir')->controller(FormulirController::class)->name('formulir.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/get-kabupaten', 'getKabupaten')->name('getKabupaten');
@@ -78,6 +81,11 @@ Route::prefix('mhs')->middleware(['auth', 'role:mhs'])->group(function () {
             ->name('check.nik.ortu.uniqueness');
         Route::post('/simpan-step2', 'simpanStep2')->name('simpan.step2');
         Route::post('/simpan-step3', 'simpanStep3')->name('simpan.step3');
+        Route::post('/simpan-step4', 'simpanStep4')->name('simpan.step4');
+
+        //upload pembayaran
+        Route::post('/simpan-pembayaran', 'simpanBuktiPembayaran')->name('simpanBuktiPembayaran');
+        Route::get('/cetak-bukti-pembayaran/{id}', 'downloadBuktiPembayaran')->name('downloadBuktiPembayaran');
     });
 });
 

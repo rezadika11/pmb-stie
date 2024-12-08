@@ -35,10 +35,26 @@
                             <span style="font-size: 15px">{{ Auth::user()->name }}</span> 
                         </a>
                         <div class="dropdown-menu dropdown-menu-right">
-                            <a href="./app-profile.html" class="dropdown-item">
+                            @php
+                                $user = Auth::user();
+                            @endphp
+                            @if ($user->roles == 'superadmin')
+                            <a href="#" class="dropdown-item">
                                 <i class="bi bi-person"></i>
                                 <span class="ml-2">Profile </span>
                             </a>
+                            @elseif ($user->roles == 'admin')
+                            <a href="#" class="dropdown-item">
+                                <i class="bi bi-person"></i>
+                                <span class="ml-2">Profile </span>
+                            </a>
+                            @elseif ($user->roles == 'mhs')
+                            <a href="{{ route('profile') }}" class="dropdown-item">
+                                <i class="bi bi-person"></i>
+                                <span class="ml-2">Profile </span>
+                            </a>
+                            @endif
+                         
                             <hr>
                             <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="dropdown-item">
                                 <i class="bi bi-box-arrow-right"></i>

@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
+use App\Models\Dokumen;
 use App\Models\Mahasiswa;
 use App\Models\Ortu;
+use App\Models\Pembayaran;
 use App\Models\Prodi;
+use Barryvdh\DomPDF\Facade\Pdf;
+use GuzzleHttp\Promise\Create;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -105,11 +109,19 @@ class FormulirController extends Controller
             ->where('mahasiswa.id_user', $user->id)
             ->first();
 
+        $data['pembayaran'] = DB::table('pembayaran')
+            ->join('mahasiswa', 'mahasiswa.id_pembayaran', 'pembayaran.id')
+            ->select('pembayaran.*', 'mahasiswa.id_pembayaran')
+            ->where('mahasiswa.id_user', $user->id)
+            ->first();
+
         return view('backend.mhs.formulir', $data);
     }
 
     public function checkNikUniquenessStep1(Request $request)
     {
+
+        // dd($request->all());
         $nik = $request->nik;
         $idMahasiswa = $request->id_mahasiswa;
 
@@ -126,6 +138,18 @@ class FormulirController extends Controller
 
         // Jika id_mahasiswa ada, exclude NIK dari data yang sedang diedit
         if ($idMahasiswa) {
+            // Ambil data mahasiswa saat ini
+            $currentMahasiswa = Mahasiswa::find($idMahasiswa);
+
+            // Jika NIK tidak berubah, kembalikan true
+            if ($currentMahasiswa && $currentMahasiswa->nik === $nik) {
+                return response()->json([
+                    'unique' => true,
+                    'message' => 'NIK valid'
+                ]);
+            }
+
+            // Lanjutkan pengecekan untuk NIK yang berbeda
             $query->where('id', '!=', $idMahasiswa);
         }
 
@@ -139,18 +163,30 @@ class FormulirController extends Controller
 
     public function simpanStep1(Request $request)
     {
-        // Ambil mahasiswa yang sedang login/aktif
-        $currentMahasiswa = Mahasiswa::find($request->id_mahasiswa);
+        // Dapatkan mahasiswa saat ini berdasarkan user yang login
+        $mahasiswa = Mahasiswa::where('id_user', Auth::user()->id)->first();
 
-        // Aturan validasi dengan pengecualian khusus
+        // Validasi NIK dengan pendekatan yang lebih aman
         $nikValidationRule = [
             'required',
             'digits:16',
-            // Jika NIK berbeda dengan NIK saat ini, pastikan unique
-            Rule::unique('mahasiswa')->where(function ($query) use ($currentMahasiswa) {
-                // Jika NIK berbeda, pastikan unique
-                return $query->where('nik', '!=', $currentMahasiswa->nik);
-            })
+            function ($attribute, $value, $fail) use ($mahasiswa) {
+                // Jika mahasiswa sudah ada dan NIK tidak berubah, lewati validasi
+                if ($mahasiswa && $value === $mahasiswa->nik) {
+                    return;
+                }
+
+                // Cek apakah NIK sudah digunakan oleh mahasiswa lain
+                $exists = Mahasiswa::where('nik', $value)
+                    ->when($mahasiswa, function ($query) use ($mahasiswa) {
+                        return $query->where('id', '!=', $mahasiswa->id);
+                    })
+                    ->exists();
+
+                if ($exists) {
+                    $fail('NIK sudah digunakan oleh mahasiswa lain');
+                }
+            }
         ];
 
         $validator = Validator::make($request->all(), [
@@ -171,7 +207,7 @@ class FormulirController extends Controller
             'no_hp' => 'required|numeric',
             'pekerjaan' => 'nullable|string'
         ], [
-            'nik.unique' => 'NIK sudah digunakan, tolong ganti yg sesuai',
+            'nik.unique' => 'NIK sudah digunakan oleh mahasiswa lain',
             'nik.digits' => 'NIK harus 16 digit'
         ]);
 
@@ -183,6 +219,13 @@ class FormulirController extends Controller
         }
 
         try {
+            $currentYear = date('Y');
+
+            // Hanya generate no_pendaftaran jika ini adalah entri baru
+            $no_pendaftaran = $mahasiswa
+                ? $mahasiswa->no_pendaftaran
+                : $this->generateNoPendaftaran($currentYear);
+
             $dataToSave = [
                 'id_user' => Auth::user()->id,
                 'nik' => $request->nik,
@@ -203,17 +246,20 @@ class FormulirController extends Controller
                 'kode_pos' => $request->kode_pos,
                 'no_hp' => $request->no_hp,
                 'pekerjaan' => $request->pekerjaan ?? null,
+                'no_pendaftaran' => $no_pendaftaran,
                 'status_step' => 2
             ];
 
             $mahasiswa = Mahasiswa::updateOrCreate(
-                ['id' => $request->id_mahasiswa],
+                ['id_user' => Auth::user()->id],
                 $dataToSave
             );
 
             return response()->json([
                 'success' => true,
-                'message' => $request->id_mahasiswa ? 'Data berhasil diperbarui' : 'Data berhasil disimpan',
+                'message' => $mahasiswa->wasRecentlyCreated
+                    ? 'Data berhasil disimpan'
+                    : 'Data berhasil diperbarui',
                 'nextStep' => 2,
                 'id_mahasiswa' => $mahasiswa->id
             ]);
@@ -225,92 +271,177 @@ class FormulirController extends Controller
         }
     }
 
+    // Metode terpisah untuk generate nomor pendaftaran
+    private function generateNoPendaftaran($currentYear)
+    {
+        // Find the last registration number for the current year
+        $lastRegistration = Mahasiswa::where('no_pendaftaran', 'like', "PMB-$currentYear-%")
+            ->orderBy('no_pendaftaran', 'desc')
+            ->first();
+
+        // Determine the next sequential number
+        if ($lastRegistration) {
+            // Extract the sequential number from the last registration number
+            $lastNumber = (int) substr($lastRegistration->no_pendaftaran, strrpos($lastRegistration->no_pendaftaran, '-') + 1);
+            $nextNumber = $lastNumber + 1;
+        } else {
+            // If no registration exists for the current year, start with 1
+            $nextNumber = 1;
+        }
+
+        // Format the new registration number
+        return 'PMB-' . $currentYear . '-' . str_pad($nextNumber, 2, '0', STR_PAD_LEFT);
+    }
+
+    // Metode untuk pengecekan keunikan NIK
     public function checkNikOrtuUniqueness(Request $request)
     {
+        $mahasiswa = Mahasiswa::where('id_user', Auth::user()->id)->first();
+
+        if (!$mahasiswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mahasiswa tidak ditemukan'
+            ], 404);
+        }
+
+        // Cari data ortu yang sudah ada (jika ada)
+        $currentOrtu = $mahasiswa->id_ortu
+            ? Ortu::find($mahasiswa->id_ortu)
+            : null;
+
         $nik = $request->nik;
-        $idOrtu = $request->id_ortu;
-        $idMahasiswa = $request->id_mahasiswa;
-        $jenisNik = $request->jenis_nik; // 'ayah' atau 'ibu'
+        $jenisNik = $request->jenis_nik;
+        $idOrtu = $currentOrtu ? $currentOrtu->id : null;
 
         // Validasi input
-        if (!$nik) {
+        if (!$nik || !$jenisNik) {
             return response()->json([
                 'unique' => false,
                 'message' => 'NIK tidak valid'
             ], 400);
         }
 
-        // Cek apakah NIK sudah ada di database
-        $query = Ortu::where($jenisNik == 'ayah' ? 'nik_ayah' : 'nik_ibu', $nik);
-
-        // Jika id_ortu ada, exclude NIK dari data yang sedang diedit
-        if ($idOrtu) {
-            $query->where('id', '!=', $idOrtu);
-        }
-
-        // Tambahan: Cek apakah NIK sudah digunakan oleh mahasiswa lain
-        if ($idMahasiswa) {
-            $query->whereHas('mahasiswa', function ($q) use ($idMahasiswa) {
-                $q->where('id', '!=', $idMahasiswa);
-            });
-        }
-
-        $exists = $query->exists();
+        // Cek keunikan NIK berdasarkan jenisnya
+        $exists = Ortu::where($jenisNik === 'ayah' ? 'nik_ayah' : 'nik_ibu', $nik)
+            // Kecualikan ortu milik mahasiswa saat ini jika sudah punya ortu
+            ->when($idOrtu, function ($query) use ($idOrtu) {
+                return $query->where('id', '!=', $idOrtu);
+            })
+            ->exists();
 
         return response()->json([
             'unique' => !$exists,
-            'message' => $exists ? 'NIK sudah digunakan' : 'NIK tersedia'
+            'message' => $exists
+                ? 'NIK sudah digunakan oleh orang tua lain'
+                : 'NIK tersedia'
         ]);
     }
-
     public function simpanStep2(Request $request)
     {
-        // Ambil data ortu yang sedang login/aktif
-        $currentOrtu = Ortu::find($request->id_ortu);
 
-        // Aturan validasi khusus untuk update
-        $nikAyahValidationRule = [
-            'required',
-            'digits:16',
-            // Jika ada ID ortu (update), abaikan NIK milik ortu yang sedang diedit
-            Rule::unique('ortu', 'nik_ayah')->ignore($currentOrtu->id ?? null),
-        ];
+        // $id_mahasiswa = Mahasiswa::where();
+        $mahasiswa = Mahasiswa::where('id_user', Auth::user()->id)->first();
 
-        $nikIbuValidationRule = [
-            'required',
-            'digits:16',
-            // Jika ada ID ortu (update), abaikan NIK milik ortu yang sedang diedit
-            Rule::unique('ortu', 'nik_ibu')->ignore($currentOrtu->id ?? null),
-        ];
+        if (!$mahasiswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mahasiswa tidak ditemukan'
+            ], 404);
+        }
 
+        // Cari data ortu yang sudah ada (jika ada)
+        $currentOrtu = $mahasiswa->id_ortu
+            ? Ortu::find($mahasiswa->id_ortu)
+            : null;
 
         $validator = Validator::make($request->all(), [
-            'nama_ayah' => 'required|string',
-            'tempat_lahir_ayah' => 'required|string',
-            'tanggal_lahir_ayah' => 'required|string',
-            'nik_ayah' => $nikAyahValidationRule,
+            'nik_ayah' => [
+                'digits:16', // Harus 16 digit
+                function ($attribute, $value, $fail) use ($mahasiswa) {
+                    // Lewati jika NIK kosong
+                    if (empty($value)) {
+                        return;
+                    }
+
+                    // Cari ortu yang terkait dengan mahasiswa
+                    $currentOrtu = $mahasiswa->id_ortu
+                        ? Ortu::find($mahasiswa->id_ortu)
+                        : null;
+
+                    // Jika ortu sudah ada dan NIK tidak berubah, lewati validasi
+                    if ($currentOrtu && $value === $currentOrtu->nik_ayah) {
+                        return;
+                    }
+
+                    // Cek apakah NIK ayah sudah digunakan di tabel ortu
+                    $exists = Ortu::where('nik_ayah', $value)
+                        ->when($currentOrtu, function ($query) use ($currentOrtu) {
+                            // Kecualikan ortu saat ini jika sedang update
+                            return $query->where('id', '!=', $currentOrtu->id);
+                        })
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('NIK Ayah sudah digunakan');
+                    }
+                }
+            ],
+
+            // Validasi NIK Ibu
+            'nik_ibu' => [
+                'digits:16', // Harus 16 digit
+                function ($attribute, $value, $fail) use ($mahasiswa) {
+                    // Lewati jika NIK kosong
+                    if (empty($value)) {
+                        return;
+                    }
+
+                    // Cari ortu yang terkait dengan mahasiswa
+                    $currentOrtu = $mahasiswa->id_ortu
+                        ? Ortu::find($mahasiswa->id_ortu)
+                        : null;
+
+                    // Jika ortu sudah ada dan NIK tidak berubah, lewati validasi
+                    if ($currentOrtu && $value === $currentOrtu->nik_ibu) {
+                        return;
+                    }
+
+                    // Cek apakah NIK ibu sudah digunakan di tabel ortu
+                    $exists = Ortu::where('nik_ibu', $value)
+                        ->when($currentOrtu, function ($query) use ($currentOrtu) {
+                            // Kecualikan ortu saat ini jika sedang update
+                            return $query->where('id', '!=', $currentOrtu->id);
+                        })
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('NIK Ibu sudah digunakan');
+                    }
+                }
+            ],
+            'nama_ayah' => 'required',
+            'tempat_lahir_ayah' => 'required',
+            'tanggal_lahir_ayah' => 'required',
             'pendidikan_ayah' => 'required',
-            'pekerjaan_ayah' => 'required|string',
+            'pekerjaan_ayah' => 'required',
             'penghasilan_ayah' => 'required',
             'no_hp_ayah' => 'required',
-            'nama_ibu' => 'required|string',
-            'tempat_lahir_ibu' => 'required|string',
-            'tanggal_lahir_ibu' => 'required|string',
-            'nik_ibu' => $nikIbuValidationRule,
+
+            //ibu
+            'nama_ibu' => 'required',
+            'tempat_lahir_ibu' => 'required',
+            'tanggal_lahir_ibu' => 'required',
             'pendidikan_ibu' => 'required',
-            'pekerjaan_ibu' => 'required|string',
+            'pekerjaan_ibu' => 'required',
             'penghasilan_ibu' => 'required',
             'no_hp_ibu' => 'required',
-            'alamat_ortu' => 'required|string',
-            'provinsi' => 'required|exists:provinsis,id',
-            'kabupaten' => 'required|exists:kabupatens,id',
-            'kecamatan' => 'required|exists:kecamatans,id',
-            'desa' => 'required|exists:kelurahans,id',
-        ], [
-            'nik_ayah.unique' => 'NIK Ayah sudah digunakan',
-            'nik_ibu.unique' => 'NIK Ibu sudah digunakan',
-            'nik_ayah.digits' => 'NIK Ayah harus 16 digit',
-            'nik_ibu.digits' => 'NIK Ibu harus 16 digit'
+
+            'alamat_ortu' => 'required',
+            'provinsi_ortu' => 'required',
+            'kabupaten_ortu' => 'required',
+            'kecamatan_ortu' => 'required',
+            'desa_ortu' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -344,27 +475,37 @@ class FormulirController extends Controller
 
                 // Alamat Orang Tua
                 'alamat_ortu' => $request->alamat_ortu,
-                'id_provinsi' => $request->provinsi,
-                'id_kabupaten' => $request->kabupaten,
-                'id_kecamatan' => $request->kecamatan,
-                'id_desa' => $request->desa
+                'id_provinsi' => $request->provinsi_ortu,
+                'id_kabupaten' => $request->kabupaten_ortu,
+                'id_kecamatan' => $request->kecamatan_ortu,
+                'id_desa' => $request->desa_ortu,
             ];
 
-            $ortu = Ortu::updateOrCreate(
-                ['id' => $request->id_ortu],
-                $dataOrtu
-            );
+            // Jika belum ada data ortu, buat baru
+            if (!$currentOrtu) {
+                $ortu = Ortu::create($dataOrtu);
 
-            // Update mahasiswa dengan id_ortu yang baru
-            $mahasiswa = Mahasiswa::where('id', $request->id_mahasiswa)->first();
-            $mahasiswa->update([
-                'id_ortu' => $ortu->id,
-                'status_step' => 3
-            ]);
+                // Update mahasiswa dengan id_ortu yang baru dibuat
+                $mahasiswa->update([
+                    'id_ortu' => $ortu->id,
+                    'status_step' => 3
+                ]);
+            } else {
+                // Jika sudah ada, update data ortu yang sudah ada
+                $currentOrtu->update($dataOrtu);
+                $ortu = $currentOrtu;
+
+                // Update status step mahasiswa
+                $mahasiswa->update([
+                    'status_step' => 3
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => $request->id_ortu ? 'Data Orang Tua berhasil diperbarui' : 'Data Orang Tua berhasil disimpan',
+                'message' => $currentOrtu
+                    ? 'Data Orang Tua berhasil diperbarui'
+                    : 'Data Orang Tua berhasil disimpan',
                 'nextStep' => 3,
                 'id_ortu' => $ortu->id
             ]);
@@ -375,9 +516,23 @@ class FormulirController extends Controller
             ], 500);
         }
     }
-
     public function simpanStep3(Request $request)
     {
+        $mahasiswa = Mahasiswa::where('id_user', Auth::user()->id)->first();
+
+        if (!$mahasiswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mahasiswa tidak ditemukan'
+            ], 404);
+        }
+
+        // Cari data program studi yang sudah ada (jika ada)
+        $currentProdi = $mahasiswa->id_program_studi
+            ? Prodi::find($mahasiswa->id_program_studi)
+            : null;
+
+
         $validator = Validator::make($request->all(), [
             'jenis_pendaftaran' => 'required',
             'jenis_kelas' => 'required',
@@ -398,21 +553,29 @@ class FormulirController extends Controller
                 'program_studi' => $request->program_studi,
             ];
 
-            $prodi = Prodi::updateOrCreate(
-                ['id' => $request->id_prodi],
-                $dataProdi
-            );
+            if (!$currentProdi) {
+                // Create baru
+                $prodi = Prodi::create($dataProdi);
 
-            // Update mahasiswa dengan id_ortu yang baru
-            $mahasiswa = Mahasiswa::where('id', $request->id_mahasiswa)->first();
-            $mahasiswa->update([
-                'id_program_studi' => $prodi->id,
-                'status_step' => 4
-            ]);
+                // Update mahasiswa dengan id_program_studi yang baru dibuat
+                $mahasiswa->update([
+                    'id_program_studi' => $prodi->id,
+                    'status_step' => 4
+                ]);
+            } else {
+                // Update data program studi yang sudah ada
+                $currentProdi->update($dataProdi);
+                $prodi = $currentProdi;
+
+                // Update status step mahasiswa
+                $mahasiswa->update([
+                    'status_step' => 4
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => $request->id_prodi ? 'Data Program Studi berhasil diperbarui' : 'Data  Program Studi berhasil disimpan',
+                'message' => $currentProdi ? 'Data Program Studi berhasil diperbarui' : 'Data  Program Studi berhasil disimpan',
                 'nextStep' => 4,
                 'id_prodi' => $prodi->id
             ]);
@@ -424,8 +587,196 @@ class FormulirController extends Controller
         }
     }
 
-    public function submitForm(Request $request)
+    public function simpanStep4(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'pas_foto' => [
+                'required',
+                'file',
+                'mimes:jpeg,png,jpg',
+                'max:1024'
+            ],
+            'ijazah' => [
+                'required',
+                'file',
+                'mimes:pdf,jpg,jpeg,png',
+                'max:1024'
+            ],
+            'kk' => [
+                'required',
+                'file',
+                'mimes:pdf,jpg,jpeg,png',
+                'max:1024'
+            ],
+            'ktp' => [
+                'required',
+                'file',
+                'mimes:pdf,jpg,jpeg,png',
+                'max:1024'
+            ],
+            'daftar_nilai' => [
+                'required',
+                'file',
+                'mimes:pdf,jpg,jpeg,png',
+                'max:1024'
+            ],
+            'kip' => [
+                'nullable', // KIP tidak wajib
+                'file',
+                'mimes:jpg,jpeg,png',
+                'max:1024'
+            ],
+        ], [
+            '*.required' => 'Dokumen :attribute wajib diunggah.',
+            '*.mimes' => 'Format file :attribute tidak valid. Gunakan format JPG, PNG, atau PDF.',
+            '*.max' => 'Ukuran file :attribute maksimal 1MB.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+                'message' => 'Validasi dokumen gagal'
+            ], 422);
+        }
+
+        try {
+            // Ambil mahasiswa yang sedang login
+            $mahasiswa = Mahasiswa::where('id_user', Auth::user()->id)->first();
+
+            // Buat dokumen baru
+            $dokumen = new Dokumen();
+            $uploadedFiles = [];
+            $fields = ['pas_foto', 'ijazah', 'kk', 'ktp', 'daftar_nilai', 'kip'];
+
+            foreach ($fields as $field) {
+                if ($request->hasFile($field)) {
+                    $file = $request->file($field);
+                    $fileName = time() . '_' . $field . '.' . $file->getClientOriginalExtension();
+
+                    // Simpan file ke direktori yang diinginkan
+                    $path = $file->storeAs('dokumen/' . $mahasiswa->id, $fileName, 'public');
+
+                    $dokumen->$field = $path;
+                    $uploadedFiles[$field] = $path;
+                }
+            }
+
+            // Simpan dokumen
+            $dokumen->save();
+
+            // Update mahasiswa dengan id dokumen
+            $mahasiswa->update([
+                'id_dokumen' => $dokumen->id,
+                'status_step' => 5 // Misalnya step selanjutnya
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Dokumen berhasil diunggah',
+                'nextStep' => 5
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function simpanBuktiPembayaran(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'bukti_pembayaran' => [
+                'required',
+                'file',
+                'mimes:jpeg,png,jpg,pdf',
+                'max:1024'
+            ],
+        ], [
+            '*.required' => 'Bukti pembayaran wajib diunggah.',
+            '*.mimes' => 'Format file :attribute tidak valid. Gunakan format JPG, PNG, atau PDF.',
+            '*.max' => 'Ukuran file :attribute maksimal 1MB.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+                'message' => 'Validasi pembayaran gagal'
+            ], 422);
+        }
+
+        try {
+            // Ambil mahasiswa yang sedang login
+            $mahasiswa = Mahasiswa::where('id_user', Auth::user()->id)->first();
+
+            // Buat dokumen baru
+            $bukti_pembayaran = new Pembayaran();
+            $uploadedFiles = [];
+            $fields = ['bukti_pembayaran'];
+
+            foreach ($fields as $field) {
+                if ($request->hasFile($field)) {
+                    $file = $request->file($field);
+                    $fileName = time() . '_' . $field . '.' . $file->getClientOriginalExtension();
+
+                    // Simpan file ke direktori yang diinginkan
+                    $path = $file->storeAs('bukti_pembayaran/' . $mahasiswa->id, $fileName, 'public');
+
+                    $bukti_pembayaran->$field = $path;
+                    $uploadedFiles[$field] = $path;
+                }
+            }
+
+            // Simpan dokumen
+            $bukti_pembayaran->save();
+
+            // Update mahasiswa dengan id dokumen
+            $mahasiswa->update([
+                'id_pembayaran' => $bukti_pembayaran->id,
+                'status_pembayaran' => 1
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bukti pembayaran berhasil diunggah',
+                'nextStep' => 5
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function downloadBuktiPembayaran($id)
+    {
+        $data['mahasiswa'] = DB::table('mahasiswa')
+            ->join('program_studi', 'program_studi.id', 'mahasiswa.id_program_studi')
+            ->join('dokumen', 'dokumen.id', 'mahasiswa.id_dokumen')
+            ->join('provinsis', 'provinsis.id', 'mahasiswa.id_provinsi')
+            ->join('kabupatens', 'kabupatens.id', 'mahasiswa.id_kabupaten')
+            ->join('kecamatans', 'kecamatans.id', 'mahasiswa.id_kecamatan')
+            ->join('kelurahans', 'kelurahans.id', 'mahasiswa.id_desa')
+            ->select('mahasiswa.nama as nama_lengkap', 'mahasiswa.nik', 'mahasiswa.no_pendaftaran', 'mahasiswa.jenis_kelamin', 'mahasiswa.tempat_lahir', 'mahasiswa.tanggal_lahir', 'program_studi.program_studi as nama_prodi', 'program_studi.jenis_pendaftaran as jalur_masuk', 'mahasiswa.alamat', 'kelurahans.name as nama_desa', 'kecamatans.name as nama_kec', 'kabupatens.name as nama_kab', 'provinsis.name as nama_prov', 'mahasiswa.no_hp', 'dokumen.pas_foto')
+            ->where('id_user', Auth::user()->id)
+            ->first();
+
+        $data['jk'] = ['L' => 'Laki-laki', 'P' => 'Perempuan'];
+        $data['jenis_daftar'] = ['reguler' => 'Reguler', 'kip' => 'KIP'];
+        $data['kelas'] = ['pagi' => 'Kelas Pagi', 'sore' => 'Kelas Sore'];
+        $data['prodi_studi'] = ['mnj' => 'Manajemen', 'akt' => 'Akutansi'];
+
+        $data['logo'] = storage_path('img/logo-kop.png');
+
+
+        $pdf = PDF::loadView('backend.mhs.download-pembayaran', $data)->setPaper('A4')
+            ->setOption('margin-top', 10)
+            ->setOption('margin-bottom', 10)
+            ->setOption('margin-left', 10)
+            ->setOption('margin-right', 10);
+        return $pdf->download('Formulir_Pendaftaran_' . $data['mahasiswa']->nik . '.pdf');
     }
 }

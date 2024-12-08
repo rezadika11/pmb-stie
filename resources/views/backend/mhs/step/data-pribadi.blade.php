@@ -13,7 +13,9 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label>NIK</label>
-                    <input type="number" class="form-control" name="nik" value="{{ old('nik',$mhs->nik ?? '') }}"  placeholder="Masukan NIK">
+                    <input type="number" name="nik" class="form-control"
+                    data-original-nik="{{ $mhs->nik ?? '' }}" 
+                    value="{{ $mhs->nik ?? '' }}" placeholder="Masukan NIK">
                 </div>
             </div>
         </div>
@@ -27,7 +29,7 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label>Tanggal Lahir</label>
-                    <input type="date" class="form-control" name="tanggal_lahir" value="{{ old('tanggal_lahir',$mhs->tanggal_lahir ?? '') }}" >
+                    <input type="text" id="date" class="form-control" name="tanggal_lahir" value="{{ old('tanggal_lahir',$mhs->tanggal_lahir ?? '') }}" autocomplete="off">
                 </div>
             </div>
         </div>

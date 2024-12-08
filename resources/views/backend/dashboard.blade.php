@@ -6,18 +6,17 @@
         <div class="row page-titles mx-0">
             <div class="col-sm-6 p-md-0">
                 <div class="welcome-text">
-                    <h4>Hi, welcome back!</h4>
-                    <p class="mb-0">Your business dashboard template</p>
+                    @if (Auth::user()->roles == 'mhs')
+                    <h4>Selamat Datang {{ Auth::user()->name }},</h4>
+                    @php
+                        $tahunAkademik = date('Y') . '/' . (date('Y') + 1);
+                    @endphp
+                    <span class="text-dark">Penerimaan Mahasiswa Baru STIE Tamansiswa Banjarnegara {{ $tahunAkademik }}</span>
+                    @endif
                 </div>
             </div>
-            <div class="col-sm-6 p-md-0 justify-content-sm-end mt-2 mt-sm-0 d-flex">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="javascript:void(0)">Layout</a></li>
-                    <li class="breadcrumb-item active"><a href="javascript:void(0)">Blank</a></li>
-                </ol>
-            </div>
         </div>
-
+        @if (Auth::user()->roles == 'admin')
         <div class="row">
             <div class="col-lg-3 col-sm-6">
                 <div class="card">
@@ -72,25 +71,34 @@
                 </div>
             </div>
         </div>
+        @elseif (Auth::user()->roles == 'mhs')
         <div class="row">
-            <div class="col-lg-8">
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="card-title">Fee Collections and Expenses</h4>
-                    </div>
-                    <div class="card-body">
-                        <div class="ct-bar-chart mt-5"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4">
+            <div class="col-12">
                 <div class="card">
                     <div class="card-body">
-                        <div class="ct-pie-chart"></div>
+                        <h4><b>Silahkan klik dibawah ini untuk mengisi formulir pendafatran:</b></h4>
+                        <a href="{{ route('formulir.index') }}" class="text-primary">Formulir Pendaftaran</a>
+                        <br>
+                        <br>
+                        <h4><b>Customer Service Penerimaan Mahasiswa Baru</b></h4>
+    
+                        <h6>STIE Tamansiswa Banjarnegara</h6>
+    
+                        <h6>Hotline WA :</h6>
+                        <ul>
+                        <li>
+                            <h6>082138157660 (Fera, Chat)</h6>
+                        </li>
+                        <li>
+                            <h6>08122533700 (Dina, Chat Only)</h6>
+                        </li>
+                        </ul>
+                        <h6>Website: <a href="www.pmb.stietambara.ac.id" class="text-secondary">pmb.stietambara.ac.id</a></h6>
                     </div>
                 </div>
             </div>
         </div>
+        @endif
     </div>
 </div>
 @endsection

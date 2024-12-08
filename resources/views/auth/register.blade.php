@@ -30,10 +30,10 @@
                                     <form action="{{ route('register') }}" method="post">
                                         @csrf
                                         <div class="form-group">
-                                            <label><strong>Username</strong></label>
+                                            <label><strong>Nama Lengkap</strong></label>
                                             <input type="text" name="name" class="form-control @error('name')
                                                 is-invalid
-                                            @enderror" value="{{ old('name') }}" placeholder="Masukan Username">
+                                            @enderror" value="{{ old('name') }}" placeholder="Masukan Nama Lengkap">
                                             @error('name')
                                                 <div class="invalid-feedback">
                                                     {{ $message }}

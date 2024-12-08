@@ -37,7 +37,7 @@ return new class extends Migration
             $table->string('pekerjaan')->nullable()->nullable();
             $table->integer('id_pembayaran')->nullable()->nullable();
             $table->integer('id_dokumen')->nullable();
-            $table->tinyInteger('status')->nullable();
+            $table->tinyInteger('status_pembayaran')->nullable();
             $table->tinyInteger('status_step')->nullable();
             $table->string('status_daftar')->nullable();
             $table->timestamps();

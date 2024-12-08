@@ -4,6 +4,7 @@
 <link rel="stylesheet" href="{{ asset('backend/vendor/toastr/css/toastr.min.css') }}">
 <link rel="stylesheet" href="{{ asset('backend/css/toastr-custom.css') }}">
 <link rel="stylesheet" href="{{ asset('backend/vendor/select2/css/select2.min.css') }}">
+<link rel="stylesheet" href="{{ asset('backend/vendor/datepicker/jquery-ui.css') }}">
 <style>
     .step {
         display: none;
@@ -51,13 +52,40 @@
         border: none;
         border-radius: 4px;
     }
-    /* .select2-container .select2-selection__rendered {
-    color: #424242 !important;
+
+    .badge-lunas {
+        background-color: #28a745;
+        color: white;
+        padding: 3px 5px;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+    .table td {
+        padding: 8px 10px; /* Kurangi padding horizontal */
+        padding-left: 0; /* Hilangkan padding kiri di kolom pertama */
     }
 
-    .select2-results__option {
-        color: #424242 !important;
-    } */
+    .table tr td:first-child {
+        width: 25%; /* Batasi lebar kolom pertama */
+        font-weight: bold;
+    }
+
+    .table tr td:last-child {
+        width: 75%; /* Sisakan ruang untuk kolom kedua */
+    }
+
+    /* Atau dengan metode fixed */
+    .table {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .table td {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 </style>
 @endpush
 @section('content')
@@ -65,7 +93,11 @@
     <div class="container-fluid">
             <div class="col-sm-6 p-md-0 mb-4">
                 <div class="welcome-text">
+                    @if (isset($mhs->status_step) == 5)
+                    <h3>Pembayaran</h3>
+                    @else
                     <h3>@yield('title')</h3>
+                    @endif
                 </div>
             </div>
 
@@ -73,8 +105,44 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-body">
+                        @if (optional($mhs)->status_step == 5)
+                            <table class="table table-striped text-dark">
+                                <tr>
+                                    <td>No Pendaftaran</td>
+                                    <td>: 86234627346234</td>
+                                </tr>
+                                <tr>
+                                    <td>Nama Lengkap</td>
+                                    <td>: {{ $mhs->nama ?? '' }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Program Studi</td>
+                                    <td>: {{ $prodi_studi[$prodi->program_studi] ?? '' }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Jenis Kelamin</td>
+                                    <td>: {{ $jk[$mhs->jenis_kelamin] ?? '' }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Biaya Pendaftaran</td>
+                                    <td>: 200.000,- 
+                                        @if ($mhs->status_pembayaran == 1)
+                                        <span class="badge-lunas">Lunas</span>
+                                        @else
+                                        <span class="badge badge-danger">Belum Lunas</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            </table>
+                            @if ($mhs->status_pembayaran == 1)
+                            <p class="text-primary">Silahkan download bukti pembayaran untuk proses daftar ulang</p>
+                            <a href="{{ route('formulir.downloadBuktiPembayaran', $pembayaran->id) }}" class="btn btn-sm btn-warning" target="_blank"><i class="bi bi-file-earmark-arrow-down"></i> Download Bukti Pendaftaran</a>
+                            @else
+                            <button id="btnModalBayar" class="btn btn-sm btn-primary"><i class="bi bi-file-earmark-arrow-up"></i> Upload Bukti Pembayaran</button>
+                            @endif
+                        @else
                         @include('backend.mhs.step.nav')
-                        <form id="casnForm" class="text-dark">
+                        <form id="casnForm" class="text-dark" enctype="multipart/form-data">
                             <!-- Step 1: Identitas Pribadi -->
                              @include('backend.mhs.step.data-pribadi')
 
@@ -95,24 +163,49 @@
                                 <button type="submit" id="submitBtn" class="button-simpan" style="display:none;"><i class="bi bi-floppy"></i> Simpan</button>
                             </div>
                         </form>
+                        @endif
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+@include('backend.mhs.components.modal-simpan-formulir')
+@include('backend.mhs.components.modal-upload-bayar')
 @endsection
 @push('js')
 <script src="{{ asset('backend/vendor/tinymce/tinymce.min.js') }}"></script>
 <script src="{{ asset('backend/vendor/toastr/js/toastr.min.js') }}"></script>
 <script src="{{ asset('backend/vendor/select2/js/select2.full.min.js') }}"></script>
+<script src="{{ asset('backend/vendor/datepicker/jquery-ui.js') }}"></script>
 {{-- // Fungsi validasi step 1 --}}
 <script>
     $(document).ready(function() {
+
+        $("#date").datepicker({
+            changeMonth: true,
+            changeYear: true,
+            yearRange: "1950:" + new Date().getFullYear(),
+            dateFormat: 'yy-mm-dd', 
+        });
+
+        $("#date_ayah").datepicker({
+            changeMonth: true,
+            changeYear: true,
+            yearRange: "1950:" + new Date().getFullYear(),
+            dateFormat: 'yy-mm-dd', 
+        });
+
+        $("#date_ibu").datepicker({
+            changeMonth: true,
+            changeYear: true,
+            yearRange: "1950:" + new Date().getFullYear(),
+            dateFormat: 'yy-mm-dd', 
+        });
         // Inisialisasi variabel dari server
         let currentStep = {{ $mhs->status_step ?? 1 }};
         const totalSteps = $('.step').length;
-    
+
         // Styling untuk select2 invalid
         $('head').append(`
             <style>
@@ -125,7 +218,7 @@
                 }
             </style>
         `);
-    
+
         // Inisialisasi select2
         $('.select2').select2({
             placeholder: "Pilih...",
@@ -133,16 +226,23 @@
         });
 
         // Fungsi untuk melakukan pengecekan NIK secara real-time
-        function checkNikOrtuUniqueness(nik, jenisNik) {
+        function checkNikUniqueness(nik) {
             return new Promise((resolve, reject) => {
+                // Ambil NIK asli dari data mahasiswa yang sedang diedit
+                const originalNik = $('[name="id_mahasiswa"]').data('original-nik');
+                
+                // Jika NIK tidak berubah, langsung resolve
+                if (nik === originalNik) {
+                    resolve({ unique: true });
+                    return;
+                }
+
                 $.ajax({
-                    url: '{{ route('formulir.check.nik.ortu.uniqueness') }}',
+                    url: '{{ route('formulir.check.nik.checkNikUniquenessStep1') }}',
                     method: 'POST',
                     data: {
                         nik: nik,
-                        id_ortu: $('[name="id_ortu"]').val() || null, // Kirim ID ortu yang sedang diedit
-                        jenis_nik: jenisNik,
-                        id_mahasiswa: $('[name="id_mahasiswa"]').val() // Tambahkan ID mahasiswa
+                        id_mahasiswa: $('[name="id_mahasiswa"]').val() || null
                     },
                     headers: {
                         'X-CSRF-TOKEN': "{{ csrf_token() }}"
@@ -155,9 +255,8 @@
                     }
                 });
             });
-        }
-    
-       // Fungsi validasi form step 1
+         }
+        // Fungsi validasi form step 1
         function validateStep1() {
             let isValid = true;
             const requiredFields = [
@@ -203,29 +302,30 @@
 
         // Fungsi untuk melakukan pengecekan NIK secara real-time
         function checkNikOrtuUniqueness(nik, jenisNik) {
-            return new Promise((resolve, reject) => {
-                $.ajax({
-                    url: '{{ route('formulir.check.nik.ortu.uniqueness') }}',
-                    method: 'POST',
-                    data: {
-                        nik: nik,
-                        id_ortu: $('[name="id_ortu"]').val() || null,
-                        jenis_nik: jenisNik
-                    },
-                    headers: {
-                        'X-CSRF-TOKEN': "{{ csrf_token() }}"
-                    },
-                    success: function(response) {
-                        resolve(response);
-                    },
-                    error: function(xhr) {
-                        reject(xhr);
-                    }
-                });
-            });
-        }
+        return new Promise((resolve, reject) => {
 
-    
+            const idOrtu = $('[name="id_ortu"]').val() || '';
+            
+            $.ajax({
+                url: '{{ route('formulir.check.nik.ortu.uniqueness') }}',
+                method: 'POST',
+                data: {
+                    nik: nik,
+                    id_ortu: idOrtu,
+                    jenis_nik: jenisNik
+                },
+                headers: {
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                },
+                success: function(response) {
+                    resolve(response);
+                },
+                error: function(xhr) {
+                    reject(xhr);
+                }
+            });
+        });
+    }
         // Fungsi validasi form step 2 (Data Orang Tua)
         function validateStep2() {
             let isValid = true;
@@ -234,7 +334,7 @@
                 'tanggal_lahir_ayah', 'tanggal_lahir_ibu', 'nik_ayah', 'nik_ibu', 
                 'pendidikan_ayah', 'pendidikan_ibu', 'no_hp_ayah', 'no_hp_ibu', 
                 'pekerjaan_ayah', 'pekerjaan_ibu', 'penghasilan_ayah', 'penghasilan_ibu', 
-                'alamat_ortu', 'provinsi', 'kabupaten', 'kecamatan', 'desa'
+                'alamat_ortu', 'provinsi_ortu', 'kabupaten_ortu', 'kecamatan_ortu', 'desa_ortu'
             ];
 
             requiredFields.forEach(field => {
@@ -295,14 +395,14 @@
 
             return isValid;
         }
-    
+
         // Fungsi validasi form step 3 (Pilih Prodi)
         function validateStep3() {
             let isValid = true;
             const requiredFields = [
                 'jenis_pendaftaran', 'program_studi', 'jenis_kelas'
             ];
-    
+
             requiredFields.forEach(field => {
                 const $field = $(`[name="${field}"]`);
                 
@@ -315,61 +415,74 @@
                     $field.removeClass('is-invalid');
                 }
             });
-    
+
             return isValid;
         }
-    
+
         // Fungsi validasi form step 4 (Dokumen)
         function validateStep4() {
             let isValid = true;
             const requiredFields = [
-                'foto', 'ijazah', 'kk', 'ktp'
+                'pas_foto', 'ijazah', 'kk', 'ktp', 'daftar_nilai'
             ];
-    
+
             requiredFields.forEach(field => {
                 const $field = $(`[name="${field}"]`);
+                const fileInput = $field[0];
                 
-                if (!$field.val()) {
+                // Cek apakah file sudah dipilih
+                if (!fileInput.files.length) {
                     $field.addClass('is-invalid');
                     isValid = false;
+                    toastr.error(`Silakan unggah ${field.replace('_', ' ')}`);
                 } else {
-                    $field.removeClass('is-invalid');
+                    // Tambahan validasi ukuran file
+                    const maxSize = 1024 * 1024; // 1MB
+                    const fileSize = fileInput.files[0].size;
+                    
+                    if (fileSize > maxSize) {
+                        $field.addClass('is-invalid');
+                        isValid = false;
+                        toastr.error(`Ukuran file ${field.replace('_', ' ')} maksimal 1MB`);
+                    } else {
+                        $field.removeClass('is-invalid');
+                    }
                 }
             });
-    
+
             return isValid;
         }
-    
+
         // Fungsi inisialisasi step berdasarkan status
         function initializeStepNavigation() {
             // Reset navigasi
             $('#wizardNav .nav-link').removeClass('active completed disabled');
-    
+
             // Aktifkan dan tandai step yang sudah dilalui
             for (let i = 1; i < currentStep; i++) {
                 $(`.nav-link[data-step="${i}"]`)
                     .addClass('completed')
                     .removeClass('disabled');
             }
-    
+
             // Set step saat ini aktif
             $(`.nav-link[data-step="${currentStep}"]`)
                 .addClass('active')
                 .removeClass('disabled');
-    
+
             // Sembunyikan semua step
             $('.step').hide().removeClass('active');
-    
+
             // Tampilkan step saat ini
             $(`.step[data-step="${currentStep}"]`)
                 .show()
                 .addClass('active');
-    
+
             // Update navigasi tombol
             $('#prevBtn').toggle(currentStep > 1);
             $('#nextBtn').toggle(currentStep < totalSteps);
             $('#submitBtn').toggle(currentStep === totalSteps);
-    
+
             // Nonaktifkan step yang belum bisa diakses
             $('#wizardNav .nav-link').each(function() {
                 const stepNumber = parseInt($(this).data('step'));
@@ -378,11 +491,11 @@
                 }
             });
         }
-    
+
         // Panggil fungsi inisialisasi step
         initializeStepNavigation();
-    
-       // Fungsi simpan data step 1
+
+        // Fungsi simpan data step 1
         function simpanDataStep1() {
             // Validasi form terlebih dahulu
             if (!validateStep1()) {
@@ -435,30 +548,30 @@
                 }
             });
         }
-
-        // Tambahkan event listener untuk real-time validation
-        $(document).ready(function() {
-            $('input, select').on('input change', function() {
-                $(this).removeClass('is-invalid');
-            });
-
-            // Validasi NIK real-time
-            $('[name="nik"]').on('blur', function() {
-                const nik = $(this).val();
-                
-                if (nik && nik.length === 16) {
-                    // Optional: Tambahkan pengecekan NIK secara real-time jika diperlukan
-                    checkNikUniqueness(nik).then(response => {
-                        if (!response.unique) {
-                            $(this).addClass('is-invalid');
-                            toastr.error('NIK sudah digunakan');
-                        } else {
-                            $(this).removeClass('is-invalid');
-                        }
-                    });
+        
+        $('[name="nik"]').on('blur', function() {
+            const nik = $(this).val();
+            const originalNik = $(this).data('original-nik');
+            
+            if (nik && nik.length === 16) {
+                // Jika NIK tidak berubah, tidak perlu validasi
+                if (nik === originalNik) {
+                    $(this).removeClass('is-invalid');
+                    return;
                 }
-            });
+
+                checkNikUniqueness(nik).then(response => {
+                    if (!response.unique) {
+                        $(this).addClass('is-invalid');
+                        toastr.error('NIK sudah digunakan');
+                    } else {
+                        $(this).removeClass('is-invalid');
+                    }
+                });
+            }
         });
+
+       
         // Event listener navigasi step
         $('#wizardNav .nav-link').click(function(e) {
             e.preventDefault();
@@ -468,7 +581,7 @@
                 toastr.warning('Lengkapi step sebelumnya terlebih dahulu');
                 return;
             }
-    
+
             const targetStep = parseInt($(this).data('step'));
             
             // Jika ingin pindah ke step 2
@@ -484,7 +597,7 @@
                 initializeStepNavigation();
             }
         });
-    
+
         // Tombol Next
         $('#nextBtn').click(function() {
             if (currentStep === 1) {
@@ -512,13 +625,57 @@
                 initializeStepNavigation();
             }
         });
-    
+
         // Tombol Previous
         $('#prevBtn').click(function() {
             currentStep--;
             initializeStepNavigation();
         });
-    
+
+        $('[name="nik_ayah"]').on('blur', function() {
+            const nik = $(this).val();
+            const originalNik = $(this).data('original-nik');
+            
+            if (nik && nik.length === 16) {
+                // Jika NIK tidak berubah, tidak perlu validasi
+                if (nik === originalNik) {
+                    $(this).removeClass('is-invalid');
+                    return;
+                }
+
+                checkNikOrtuUniqueness(nik, 'ayah').then(response => {
+                    if (!response.unique) {
+                        $(this).addClass('is-invalid');
+                        toastr.error(response.message);
+                    } else {
+                        $(this).removeClass('is-invalid');
+                    }
+                });
+            }
+        });
+
+        $('[name="nik_ibu"]').on('blur', function() {
+            const nik = $(this).val();
+            const originalNik = $(this).data('original-nik');
+            
+            if (nik && nik.length === 16) {
+                // Jika NIK tidak berubah, tidak perlu validasi
+                if (nik === originalNik) {
+                    $(this).removeClass('is-invalid');
+                    return;
+                }
+
+                checkNikOrtuUniqueness(nik, 'ibu').then(response => {
+                    if (!response.unique) {
+                        $(this).addClass('is-invalid');
+                        toastr.error(response.message);
+                    } else {
+                        $(this).removeClass('is-invalid');
+                    }
+                });
+            }
+        });
+
         // Fungsi simpan data step 2
         function simpanDataStep2() {
             // Validasi form terlebih dahulu
@@ -527,6 +684,9 @@
             }
 
             const formData = new FormData($('#casnForm')[0]);
+            @if($ortu && $ortu->id)
+                formData.append('id_ortu', '{{ $ortu->id }}');
+            @endif
 
             $.ajax({
             url: '{{ route('formulir.simpan.step2') }}',
@@ -572,46 +732,14 @@
                     toastr.error('Terjadi kesalahan saat menyimpan data');
                 }
             }
+            });
+        }
+        // Event listener untuk validasi saat input berubah
+        $('input, select').on('input change', function() {
+            $(this).removeClass('is-invalid');
         });
-}
 
-        $(document).ready(function() {
-            $('input, select').on('input change', function() {
-                $(this).removeClass('is-invalid');
-            });
-
-            // Validasi NIK real-time
-            $('[name="nik_ayah"]').on('blur', function() {
-                const nik = $(this).val();
-                
-                if (nik && nik.length === 16) {
-                    checkNikOrtuUniqueness(nik, 'ayah').then(response => {
-                        if (!response.unique) {
-                            $(this).addClass ('is-invalid');
-                            toastr.error(response.message);
-                        } else {
-                            $(this).removeClass('is-invalid');
-                        }
-                    });
-                }
-            });
-
-            $('[name="nik_ibu"]').on('blur', function() {
-                const nik = $(this).val();
-                
-                if (nik && nik.length === 16) {
-                    checkNikOrtuUniqueness(nik, 'ibu').then(response => {
-                        if (!response.unique) {
-                            $(this).addClass('is-invalid');
-                            toastr.error(response.message);
-                        } else {
-                            $(this).removeClass('is-invalid');
-                        }
-                    });
-                }
-            });
-        });
-    
+        
         // Fungsi simpan data step 3
         function simpanDataStep3() {
             const formData = new FormData($('#casnForm')[0]);
@@ -638,42 +766,103 @@
                 }
             });
         }
-    
+        
         // Fungsi simpan data step 4
         function simpanDataStep4() {
             const formData = new FormData($('#casnForm')[0]);
+
             $.ajax({
-                url: '',
+                url: '{{ route('formulir.simpan.step4') }}',
                 method: 'POST',
                 data: formData,
+                processData: false,
+                contentType: false,
                 headers: {
                     'X-CSRF-TOKEN': "{{ csrf_token() }}"
                 },
-                processData: false,
-                contentType: false,
+                beforeSend: function() {
+                    // Disable tombol saat proses
+                    $('#konfirmasiSimpanBtn').prop('disabled', true)
+                        .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...');
+                },
                 success: function(response) {
                     if (response.success) {
-                        toastr.success('Data Dokumen berhasil disimpan');
-                        // Arahkan ke halaman sukses atau langkah berikutnya
+                        toastr.success('Data formulir berhasil disimpan');
+                        currentStep = response.nextStep;
+                        initializeStepNavigation();
+                        $('#modalKonfirmasi').modal('hide');
+                        setTimeout(() => {
+                            window.location.href = '{{ route('formulir.index') }}';
+                        }, 1000);
                     } else {
-                        toastr.error(response.message);
+                        // Tampilkan error dari validator
+                        if (response.errors) {
+                            $.each(response.errors, function(field, messages) {
+                                $(`[name="${field}"]`).addClass('is-invalid');
+                                toastr.error(messages[0]);
+                            });
+                        } else {
+                            toastr.error(response.message);
+                        }
                     }
                 },
                 error: function(xhr) {
-                    toastr.error('Terjadi kesalahan saat menyimpan data');
+                    // Parsing error response untuk menangani error dari validator
+                    if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        $.each(xhr.responseJSON.errors, function(field, messages) {
+                            $(`[name="${field}"]`).addClass('is-invalid');
+                            toastr.error(messages[0]);
+                        });
+                    } else {
+                        toastr.error('Terjadi kesalahan saat mengunggah dokumen');
+                    }
+                },
+                complete: function() {
+                    // Enable kembali tombol
+                    $('#konfirmasiSimpanBtn').prop('disabled', false)
+                        .html('Simpan');
                 }
             });
         }
-    
+
+        
         // Tombol Submit
-        $('#submitBtn').click(function() {
+        $('#submitBtn').click(function(e) {
+            // Mencegah submit form default
+            e.preventDefault();
+            
             if (currentStep === 4) {
+                // Validasi client-side
                 if (!validateStep4()) {
                     toastr.error('Lengkapi data Dokumen terlebih dahulu');
-                    return;
+                    return false;
                 }
+
+                // Tampilkan modal konfirmasi
+                $('#modalKonfirmasi').modal('show');
+            }
+            
+            // Kembalikan false untuk mencegah submit
+            return false;
+        });
+
+        // Pastikan form tidak submit secara default
+        $('#casnForm').on('submit', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // Tombol Konfirmasi Simpan di Modal
+        $('#konfirmasiSimpanBtn').click(function(e) {
+            // Mencegah submit default
+            e.preventDefault();
+            
+            // Validasi ulang sebelum simpan
+            if (validateStep4()) {
                 simpanDataStep4();
             }
+            
+            return false;
         });
     });
 </script>
@@ -1003,6 +1192,117 @@ $(document).ready(function() {
         initDesaOrtu();
     @endif
 });
+</script>
+<script>
+    //Pembayaran
+
+    function validatePembayaran() { 
+        let isValid = true;
+            const requiredFields = [
+                'bukti_pembayaran'
+            ];
+
+            requiredFields.forEach(field => {
+                const $field = $(`[name="${field}"]`);
+                const fileInput = $field[0];
+                
+                // Cek apakah file sudah dipilih
+                if (!fileInput.files.length) {
+                    $field.addClass('is-invalid');
+                    isValid = false;
+                    toastr.error(`Silakan unggah ${field.replace('_', ' ')}`);
+                } else {
+                    // Tambahan validasi ukuran file
+                    const maxSize = 1024 * 1024; // 1MB
+                    const fileSize = fileInput.files[0].size;
+                    
+                    if (fileSize > maxSize) {
+                        $field.addClass('is-invalid');
+                        isValid = false;
+                        toastr.error(`Ukuran file ${field.replace('_', ' ')} maksimal 1MB`);
+                    } else {
+                        $field.removeClass('is-invalid');
+                    }
+                }
+            });
+
+            return isValid;
+     }
+    $(document).ready(()=>{
+        $('#btnModalBayar').click((e)=>{
+            e.preventDefault();
+            $('#modalBayar').modal('show');
+        })
+
+        $('#btnSimpanBuktiBayar').click((e)=>{
+            e.preventDefault();
+            if (!validatePembayaran()) {
+                return;
+            }
+
+            let formData = new FormData();
+            let fileInput = $('#bukti_pembayaran')[0];
+            
+            if (fileInput.files.length > 0) {
+                formData.append('bukti_pembayaran', fileInput.files[0]);
+            } else {
+                toastr.error('Silakan pilih file bukti pembayaran');
+                return;
+            }
+
+            $.ajax({
+                url: '{{ route('formulir.simpanBuktiPembayaran') }}',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                },
+                beforeSend: function() {
+                    $('#btnSimpanBuktiBayar').prop('disabled', true)
+                        .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...');
+                },
+                success: function(response) {
+                    if (response.success) {
+                       // Tampilkan notifikasi terlebih dahulu
+                        toastr.success('Bukti pembayaran berhasil disimpan');
+
+                        // Kemudian sembunyikan modal
+                        $('#modalBayar').modal('hide');
+
+                        // Terakhir, redirect dengan sedikit delay
+                        setTimeout(() => {
+                            window.location.href = '{{ route('formulir.index') }}';
+                        }, 1000);
+                    } else {
+                        if (response.errors) {
+                            $.each(response.errors, function(field, messages) {
+                                $(`[name="${field}"]`).addClass('is-invalid');
+                                toastr.error(messages[0]);
+                            });
+                        } else {
+                            toastr.error(response.message);
+                        }
+                    }
+                },
+                error: function(xhr) {
+                    if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        $.each(xhr.responseJSON.errors, function(field, messages) {
+                            $(`[name="${field}"]`).addClass('is-invalid');
+                            toastr.error(messages[0]);
+                        });
+                    } else {
+                        toastr.error('Terjadi kesalahan saat mengunggah dokumen');
+                    }
+                },
+                complete: function() {
+                    $('#btnSimpanBuktiBayar').prop('disabled', false)
+                        .html('Simpan');
+                }
+            });
+        });
+    });
 </script>
 
 @endpush
