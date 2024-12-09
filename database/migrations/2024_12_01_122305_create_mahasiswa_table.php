@@ -35,11 +35,11 @@ return new class extends Migration
             $table->integer('kode_pos')->nullable();
             $table->string('no_hp')->nullable();
             $table->string('pekerjaan')->nullable()->nullable();
-            $table->integer('id_pembayaran')->nullable()->nullable();
+            $table->integer('id_pembayaran')->nullable();
             $table->integer('id_dokumen')->nullable();
-            $table->tinyInteger('status_pembayaran')->nullable();
+            $table->tinyInteger('status_pembayaran')->default(0);
             $table->tinyInteger('status_step')->nullable();
-            $table->string('status_daftar')->nullable();
+            $table->string('status_daftar')->default(0);
             $table->timestamps();
         });
     }

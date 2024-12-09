@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Backend\Admin\PmbController;
 use App\Http\Controllers\Backend\BannerController;
 use App\Http\Controllers\Backend\BrosurController;
 use App\Http\Controllers\Backend\ContactController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\PendaftaranController as FrontendPendaftaranController;
 use App\Http\Controllers\Frontend\RegistrasiController as FrontendRegistrasiController;
 use App\Http\Controllers\Backend\ProfilController as SuperadminProfilController;
+use App\Http\Controllers\Backend\Admin\ProfilController as AdminProfilController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth')->group(function () {
@@ -73,9 +75,17 @@ Route::prefix('superadmin')->middleware(['auth', 'role:superadmin'])->group(func
     Route::post('/update-profil', [SuperadminProfilController::class, 'update'])->name('superadmin.updateProfile');
 });
 
-// Route::middleware(['auth', 'role:admin'])->group(function () {
-//     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-// });
+Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/profil', [AdminProfilController::class, 'edit'])->name('admin.profile');
+    Route::post('/update-profil', [AdminProfilController::class, 'update'])->name('admin.updateProfile');
+    Route::prefix('pmb')->controller(PmbController::class)->name('pmb.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/tambah', 'create')->name('create');
+        Route::post('/store', 'store')->name('store');
+        Route::get('/detail/{id}', 'detail')->name('detail');
+        Route::get('/datatable', 'datatable')->name('datatable');
+    });
+});
 
 Route::prefix('mhs')->middleware(['auth', 'role:mhs'])->group(function () {
     Route::get('/profil', [ProfilController::class, 'edit'])->name('profile');

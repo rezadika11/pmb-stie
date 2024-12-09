@@ -1,5 +1,5 @@
 <div class="nav-header">
-    <a href="index.html" class="brand-logo" id="logo-container">
+    <a href="{{ route('dashboard') }}" class="brand-logo" id="logo-container">
         <img class="logo-abbr" src="{{ asset('backend/img/logo-stie.png') }}" >
         <img class="logo-compact" src="{{ asset('backend/img/pmb.png') }}" alt="">
         <img class="brand-title" src="{{ asset('backend/img/pmb.png') }}" alt="">
@@ -41,17 +41,17 @@
                             @if ($user->roles == 'superadmin')
                             <a href="{{ route('superadmin.profile') }}" class="dropdown-item">
                                 <i class="bi bi-person"></i>
-                                <span class="ml-2">Profile </span>
+                                <span class="ml-2">Profil </span>
                             </a>
                             @elseif ($user->roles == 'admin')
-                            <a href="#" class="dropdown-item">
+                            <a href="{{ route('admin.profile') }}" class="dropdown-item">
                                 <i class="bi bi-person"></i>
-                                <span class="ml-2">Profile </span>
+                                <span class="ml-2">Profil </span>
                             </a>
                             @elseif ($user->roles == 'mhs')
                             <a href="{{ route('profile') }}" class="dropdown-item">
                                 <i class="bi bi-person"></i>
-                                <span class="ml-2">Profile </span>
+                                <span class="ml-2">Profil </span>
                             </a>
                             @endif
                          

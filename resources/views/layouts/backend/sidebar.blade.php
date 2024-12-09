@@ -58,7 +58,7 @@
                 <li class="{{ request()->routeIs('users*') ? 'mm-active' : '' }}"><a href="{{ route('users.index') }}" aria-expanded="false"><i class="bi bi-people"></i><span
                     class="nav-text">User</span></a></li>
                 @elseif ($user->roles == 'admin')
-                <li class="{{ request()->routeIs('pendaftaran*') ? 'mm-active' : '' }}"><a href="{{ route('pendaftaran.index') }}" aria-expanded="false" ><i class="bi bi-file-earmark-text"></i><span
+                <li class="{{ request()->routeIs('pmb*') ? 'mm-active' : '' }}"><a href="{{ route('pmb.index') }}" aria-expanded="false" ><i class="bi bi-file-earmark-text"></i><span
                     class="nav-text">PMB</span></a></li>
                 @elseif ($user->roles == 'mhs')
                 <li class="{{ request()->routeIs('formulir*') ? 'mm-active' : '' }}"><a href="{{ route('formulir.index') }}" aria-expanded="false" ><i class="bi bi-file-earmark-text"></i><span
