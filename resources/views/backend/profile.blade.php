@@ -16,10 +16,21 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-body">
-                        <form action="{{ route('update.profile') }}" method="POST">
+                        <form action="{{ route('superadmin.updateProfile') }}" method="POST">
                             @csrf
                             <div class="row">
                                 <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label>Nama</label>
+                                       <input type="text" class="form-control @error('name')
+                                           is-invalid
+                                       @enderror" name="name" value="{{ old('name', $profil->name) }}">
+                                       @error('name')
+                                           <div class="invalid-feedback">
+                                            {{ $message }}
+                                           </div>
+                                       @enderror
+                                    </div>
                                     <div class="form-group">
                                         <label>Email</label>
                                        <input type="text" class="form-control @error('email')

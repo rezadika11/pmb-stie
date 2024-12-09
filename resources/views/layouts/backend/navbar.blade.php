@@ -39,7 +39,7 @@
                                 $user = Auth::user();
                             @endphp
                             @if ($user->roles == 'superadmin')
-                            <a href="#" class="dropdown-item">
+                            <a href="{{ route('superadmin.profile') }}" class="dropdown-item">
                                 <i class="bi bi-person"></i>
                                 <span class="ml-2">Profile </span>
                             </a>

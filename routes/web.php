@@ -8,12 +8,13 @@ use App\Http\Controllers\Backend\FormulirController;
 use App\Http\Controllers\Backend\Mhs\ProfilController;
 use App\Http\Controllers\Backend\PendaftaranController;
 use App\Http\Controllers\Backend\RegistrasiController;
+use App\Http\Controllers\Backend\UsersController;
 use App\Http\Controllers\Frontend\BrosurController as FrontendBrosurController;
 use App\Http\Controllers\Frontend\ContactController as FrontendContactController;
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\PendaftaranController as FrontendPendaftaranController;
 use App\Http\Controllers\Frontend\RegistrasiController as FrontendRegistrasiController;
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Backend\ProfilController as SuperadminProfilController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth')->group(function () {
@@ -57,6 +58,19 @@ Route::prefix('superadmin')->middleware(['auth', 'role:superadmin'])->group(func
         Route::get('/', 'index')->name('index');
         Route::put('/{id}', 'update')->name('update');
     });
+
+    Route::prefix('users')->controller(UsersController::class)->name('users.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/tambah', 'create')->name('create');
+        Route::post('/store', 'store')->name('store');
+        Route::get('/edit/{id}', 'edit')->name('edit');
+        Route::post('/update/{id}', 'update')->name('update');
+        Route::delete('/{id}', 'destroy')->name('destroy');
+        Route::get('/datatable', 'datatable')->name('datatable');
+    });
+
+    Route::get('/profil', [SuperadminProfilController::class, 'edit'])->name('superadmin.profile');
+    Route::post('/update-profil', [SuperadminProfilController::class, 'update'])->name('superadmin.updateProfile');
 });
 
 // Route::middleware(['auth', 'role:admin'])->group(function () {
@@ -64,8 +78,8 @@ Route::prefix('superadmin')->middleware(['auth', 'role:superadmin'])->group(func
 // });
 
 Route::prefix('mhs')->middleware(['auth', 'role:mhs'])->group(function () {
-    Route::get('/profile', [ProfilController::class, 'edit'])->name('profile');
-    Route::post('/update-profile', [ProfilController::class, 'update'])->name('update.profile');
+    Route::get('/profil', [ProfilController::class, 'edit'])->name('profile');
+    Route::post('/update-profil', [ProfilController::class, 'update'])->name('update.profile');
     Route::prefix('formulir')->controller(FormulirController::class)->name('formulir.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/get-kabupaten', 'getKabupaten')->name('getKabupaten');

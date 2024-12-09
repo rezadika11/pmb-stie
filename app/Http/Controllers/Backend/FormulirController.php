@@ -229,9 +229,9 @@ class FormulirController extends Controller
             $dataToSave = [
                 'id_user' => Auth::user()->id,
                 'nik' => $request->nik,
-                'nama' => $request->nama,
+                'nama' => ucwords($request->nama),
                 'pts_transfer' => $request->pts_transfer,
-                'tempat_lahir' => $request->tempat_lahir,
+                'tempat_lahir' => ucwords($request->tempat_lahir),
                 'tanggal_lahir' => $request->tanggal_lahir,
                 'jenis_kelamin' => $request->jenis_kelamin,
                 'agama' => $request->agama,
@@ -454,8 +454,8 @@ class FormulirController extends Controller
         try {
             $dataOrtu = [
                 // Data Ayah
-                'nama_ayah' => $request->nama_ayah,
-                'tempat_lahir_ayah' => $request->tempat_lahir_ayah,
+                'nama_ayah' => ucwords($request->nama_ayah),
+                'tempat_lahir_ayah' => ucwords($request->tempat_lahir_ayah),
                 'tanggal_lahir_ayah' => $request->tanggal_lahir_ayah,
                 'nik_ayah' => $request->nik_ayah,
                 'pendidikan_ayah' => $request->pendidikan_ayah,
@@ -464,8 +464,8 @@ class FormulirController extends Controller
                 'no_hp_ayah' => $request->no_hp_ayah,
 
                 // Data Ibu
-                'nama_ibu' => $request->nama_ibu,
-                'tempat_lahir_ibu' => $request->tempat_lahir_ibu,
+                'nama_ibu' => ucwords($request->nama_ibu),
+                'tempat_lahir_ibu' => ucwords($request->tempat_lahir_ibu),
                 'tanggal_lahir_ibu' => $request->tanggal_lahir_ibu,
                 'nik_ibu' => $request->nik_ibu,
                 'pendidikan_ibu' => $request->pendidikan_ibu,
