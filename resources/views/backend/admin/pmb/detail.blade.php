@@ -21,7 +21,12 @@
                                 @csrf
                                 {{-- @method('PUT') --}}
                                 {{-- <input type="text" name="id" value="{{ $id }}"> --}}
-                                
+                                <table class="display" style="min-width: 100px">
+                                    <tr>
+                                        <td>Nama</td>
+                                        <td>{{ $mahasiswa->nama }}</td>
+                                    </tr>
+                                </table>
                                 <div class="form-group row">
                                     <div class="col-sm-10">
                                         <button type="submit" class="btn btn-primary"><i class="bi bi-floppy"></i> Simpan</button>
