@@ -34,7 +34,7 @@ class GelombangController extends Controller
                 return DataTables::of($query)
                     ->addIndexColumn()
                     ->editColumn('tahun_akademik', function ($row) {
-                        $kode = $row->tahunAkademik->kode;
+                        $kode = $row->tahunAkademik->kode ?? '';
 
                         if (strlen($kode) === 8) {
                             return substr($kode, 0, 4) . '/' . substr($kode, 4, 4);
