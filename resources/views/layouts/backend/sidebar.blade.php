@@ -93,7 +93,7 @@
                 {{-- <li class="{{ request()->routeIs('tahun-akademik*') ? 'mm-active' : '' }}"><a href="{{ route('admin.tahun_akademik.index') }}" aria-expanded="false"><i class="bi bi-calendar4"></i><span class="nav-text">Tahun Akademik</span></a></li> --}}
                 <li class="{{ request()->routeIs('laporan*') ? 'mm-active' : '' }}"><a href="{{ route('laporan.index') }}" aria-expanded="false"><i class="bi bi-archive"></i><span
                     class="nav-text">Laporan</span></a></li>
-                @elseif ($user->roles == 'mhs')
+                @elseif (Auth::user()->roles == 'mhs')
                 <li class="{{ request()->routeIs('formulir*') ? 'mm-active' : '' }}"><a href="{{ route('formulir.index') }}" aria-expanded="false" ><i class="bi bi-file-earmark-text"></i><span
                     class="nav-text">Formulir</span></a></li>
                 @endif

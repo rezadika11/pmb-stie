@@ -244,20 +244,7 @@ class FormulirController extends Controller
 
             // Ambil tahun akademik aktif
             $ThnAkademik = DB::table('tahun_akademik')->where('status', 1)->first();
-
-            // Ambil gelombang aktif berdasarkan tahun akademik
-            $gelombang = Gelombang::where('id_tahun_akademik', $ThnAkademik->id)
-                ->where('status', true)
-                ->where('tanggal_mulai', '<=', Carbon::now())
-                ->where('tanggal_selesai', '>=', Carbon::now())
-                ->first();
-
-            if (!$gelombang) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Tidak ada gelombang pendaftaran yang aktif saat ini.'
-                ], 400);
-            }
+            $gelombang = DB::table('gelombangs')->where('id_tahun_akademik', $ThnAkademik->id)->first();
 
             // // Ambil tahun dari tanggal_mulai
             // $currentYear = Carbon::parse($ThnAkademik->tanggal_mulai)->year;
@@ -284,7 +271,7 @@ class FormulirController extends Controller
                 'kode_pos' => $request->kode_pos,
                 'no_hp' => $request->no_hp,
                 'id_tahun_akademik' => $ThnAkademik->id,
-                'id_gelombang' => $gelombang->id,
+                'id_gelombang' => $gelombang->id ?? null,
                 'pekerjaan' => $request->pekerjaan ?? null,
                 // 'no_pendaftaran' => $no_pendaftaran,
                 'status_step' => 2
@@ -810,7 +797,7 @@ class FormulirController extends Controller
             ->join('kabupatens', 'kabupatens.id', 'mahasiswa.id_kabupaten')
             ->join('kecamatans', 'kecamatans.id', 'mahasiswa.id_kecamatan')
             ->join('kelurahans', 'kelurahans.id', 'mahasiswa.id_desa')
-            ->select('mahasiswa.nama as nama_lengkap', 'mahasiswa.nik', 'mahasiswa.no_pendaftaran', 'mahasiswa.jenis_kelamin', 'mahasiswa.tempat_lahir', 'mahasiswa.tanggal_lahir', 'program_studi.program_studi as nama_prodi', 'program_studi.jenis_pendaftaran as jalur_masuk', 'mahasiswa.alamat', 'kelurahans.name as nama_desa', 'kecamatans.name as nama_kec', 'kabupatens.name as nama_kab', 'provinsis.name as nama_prov', 'mahasiswa.no_hp', 'dokumen.pas_foto')
+            ->select('mahasiswa.nama as nama_lengkap', 'mahasiswa.id_gelombang', 'mahasiswa.nik', 'mahasiswa.no_pendaftaran', 'mahasiswa.jenis_kelamin', 'mahasiswa.tempat_lahir', 'mahasiswa.tanggal_lahir', 'program_studi.program_studi as nama_prodi', 'program_studi.jenis_pendaftaran as jalur_masuk', 'mahasiswa.alamat', 'kelurahans.name as nama_desa', 'kecamatans.name as nama_kec', 'kabupatens.name as nama_kab', 'provinsis.name as nama_prov', 'mahasiswa.no_hp', 'dokumen.pas_foto')
             ->where('id_user', Auth::user()->id)
             ->first();
 
@@ -820,6 +807,12 @@ class FormulirController extends Controller
         $data['prodi_studi'] = ['mnj' => 'Manajemen', 'akt' => 'Akutansi'];
 
         $data['logo'] = storage_path('img/logo-kop.png');
+
+        $data['gelombang'] = DB::table('gelombangs')
+            ->join('tahun_akademik', 'tahun_akademik.id', 'gelombangs.id_tahun_akademik')
+            ->select('gelombangs.biaya', 'gelombangs.nama_gelombang')
+            ->where('gelombangs.id', $data['mahasiswa']->id_gelombang)
+            ->first();
 
         //   if (file_exists($logoPath)) {
         //         $data['logo'] = $logoPath;

@@ -16,11 +16,21 @@
                            <div class="text-white">Tanggal gelombang harus di antara <strong>{{ $gelombang->tanggal_mulai }}</strong> dan <strong>{{ $gelombang->tanggal_selesai }}</strong></div> 
                         </div>
                       </div> --}}
-                      <div class="alert alert-danger text-dark" role="alert">
-                        Tanggal gelombang harus di antara <strong>{{ $gelombang->tanggal_mulai }}</strong> dan <strong>{{ $gelombang->tanggal_selesai }}</strong>
-                      </div>
+                      @if ($gelombang)
+                            <div class="alert alert-danger text-dark" role="alert">
+                                Tanggal gelombang harus di antara 
+                                <strong>{{ $gelombang->tanggal_mulai }}</strong> 
+                                dan 
+                                <strong>{{ $gelombang->tanggal_selesai }}</strong>
+                            </div>
+                        @endif
+                  
                       
-                    <input type="hidden" name="id_tahun_akademik" id="id_tahun_akademik" value="{{ $tahunAjaran->id }}">
+                      <input 
+                      type="hidden" 
+                      name="id_tahun_akademik" 
+                      id="id_tahun_akademik" 
+                      value="{{ $tahunAjaran->id ?? '' }}">
                     <input type="hidden" name="id" id="gelombang_id">
                     <div class="form-group">
                         <label for="nama_gelombang">Nama Gelombang</label>
@@ -36,6 +46,11 @@
                         <label for="tanggal_selesai">Tanggal Selesai</label>
                         <input type="text" name="tanggal_selesai" id="tglSelesai" class="form-control">
                         <span class="text-danger text-sm error-text tanggal_selesai_error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="biaya">Biaya</label>
+                        <input type="number" name="biaya" id="biaya" class="form-control">
+                        <span class="text-danger text-sm error-text biaya_error"></span>
                     </div>
                 </div>
                 <div class="modal-footer">

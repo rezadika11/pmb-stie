@@ -40,6 +40,7 @@
                                         <th>Tahun Akademik</th>
                                         <th>Tanggal Mulai</th>
                                         <th>Tanggal Selesai</th>
+                                        <th>Biaya</th>
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
@@ -116,6 +117,10 @@
                     name: 'tanggal_selesai',
                 },
                 {
+                    data: 'biaya', 
+                    name: 'biaya',
+                },
+                {
                     data: 'action', 
                     name: 'action', 
                     orderable: false, 
@@ -149,6 +154,7 @@
                 $('#nama_gelombang').val(data.nama_gelombang);
                 $('#tglMulai').val(data.tanggal_mulai);
                 $('#tglSelesai').val(data.tanggal_selesai);
+                $('#biaya').val(data.biaya);
             })
         });
 

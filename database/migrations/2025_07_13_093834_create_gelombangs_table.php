@@ -17,7 +17,7 @@ return new class extends Migration
             $table->unsignedBigInteger('id_tahun_akademik');
             $table->date('tanggal_mulai');
             $table->date('tanggal_selesai');
-            $table->boolean('status')->default(true);
+            $table->integer('biaya');
             $table->timestamps();
 
             $table->foreign('id_tahun_akademik')->references('id')->on('tahun_akademik')->onDelete('cascade');

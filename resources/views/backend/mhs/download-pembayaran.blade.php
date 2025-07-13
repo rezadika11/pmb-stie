@@ -164,12 +164,32 @@
             </tr>
         </table>
 
-        <div class="ttd-container">
-            <p>{{ $mahasiswa->nama_kab }}, {{ \Carbon\Carbon::now()->format('d F Y') }}</p>
-            <p>Calon Mahasiswa,</p>
-            <br><br>
-            <p><strong>{{ $mahasiswa->nama_lengkap }}</strong></p>
-        </div>
+        <table style="width: 100%; margin-top: 15mm; font-size: 9pt;">
+            <tr>
+                <!-- Kolom Kiri: Info Gelombang & Biaya -->
+                <td style="width: 50%; vertical-align: top;">
+                    <table class="formulir-table" style="width: 100%;">
+                        <tr>
+                            <td class="label">Gelombang</td>
+                            <td class="data-cell">{{ $gelombang->nama_gelombang ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Biaya per semester</td>
+                            <td class="data-cell">Rp {{ number_format($gelombang->biaya ?? 0, 0, ',', '.') }}</td>
+                        </tr>
+                    </table>
+                </td>
+        
+                <!-- Kolom Kanan: Tanda Tangan -->
+                <td style="width: 50%; text-align: right; vertical-align: top; margin-top:-50px">
+                    <p>{{ $mahasiswa->nama_kab }}, {{ \Carbon\Carbon::now()->format('d F Y') }}</p>
+                    <p>Calon Mahasiswa,</p>
+                    <br><br><br>
+                    <p><strong>{{ $mahasiswa->nama_lengkap }}</strong></p>
+                </td>
+            </tr>
+        </table>        
+             
     </div>
 </body>
 </html>

@@ -38,6 +38,7 @@ return new class extends Migration
             $table->integer('id_pembayaran')->nullable();
             $table->integer('id_dokumen')->nullable();
             $table->integer('id_tahun_akademik')->nullable();
+            $table->integer('id_gelombang')->nullable();
             $table->tinyInteger('status_pembayaran')->default(0);
             $table->tinyInteger('status_step')->nullable();
             $table->string('status_daftar')->default(0);
