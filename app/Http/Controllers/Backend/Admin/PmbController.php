@@ -20,7 +20,7 @@ class PmbController extends Controller
 
         return DataTables::of($query)
             ->addIndexColumn()
-              ->addColumn('no_pendaftaran', function($row){
+            ->addColumn('no_pendaftaran', function ($row) {
                 return $row->no_pendaftaran ?? '-';
             })
             ->addColumn('aksi', function ($row) {
@@ -30,11 +30,11 @@ class PmbController extends Controller
                 // return $btnEdit . ' ' . $btnDelete; // Menggunakan spasi untuk memisahkan tombol
                 return $btnView;
             })->addColumn('status', function ($row) {
-                       if ($row->status_daftar == 1) {
+                if ($row->status_daftar == 1) {
                     return '<span class="badge badge-success">Validasi</span>';
-                }else if($row->status_daftar == 2) {
-                    return '<span class="badge badge-danger">Ditolak</span>';  
-                }else {
+                } else if ($row->status_daftar == 2) {
+                    return '<span class="badge badge-danger">Ditolak</span>';
+                } else {
                     return '<span class="badge badge-warning">Belum Validasi</span>';
                 }
             })
@@ -48,7 +48,7 @@ class PmbController extends Controller
 
     public function detail($id)
     {
-       $data['mahasiswa'] = DB::table('mahasiswa')
+        $data['mahasiswa'] = DB::table('mahasiswa')
             ->leftJoin('ortu', 'ortu.id', '=', 'mahasiswa.id_ortu')
             ->leftJoin('program_studi', 'program_studi.id', '=', 'mahasiswa.id_program_studi')
             ->leftJoin('pembayaran', 'pembayaran.id', '=', 'mahasiswa.id_pembayaran')
@@ -58,22 +58,23 @@ class PmbController extends Controller
             ->leftJoin('kecamatans', 'kecamatans.id', '=', 'mahasiswa.id_kecamatan')
             ->leftJoin('kelurahans', 'kelurahans.id', '=', 'mahasiswa.id_desa')
             ->select(
-                'mahasiswa.*', 'mahasiswa.id as id_mhs',
-                'ortu.*', 
-                'program_studi.jenis_pendaftaran', 
-                'program_studi.jenis_kelas', 
-                'program_studi.program_studi', 
-                'pembayaran.id as bayar_id', 
-                'pembayaran.bukti_pembayaran', 
-                'dokumen.*', 
-                'dokumen.id as doc_id', 
-                'provinsis.name as nama_prov', 
-                'kabupatens.name as nama_kab', 
-                'kecamatans.name as nama_kec', 
+                'mahasiswa.*',
+                'mahasiswa.id as id_mhs',
+                'ortu.*',
+                'program_studi.jenis_pendaftaran',
+                'program_studi.jenis_kelas',
+                'program_studi.program_studi',
+                'pembayaran.id as bayar_id',
+                'pembayaran.bukti_pembayaran',
+                'dokumen.*',
+                'dokumen.id as doc_id',
+                'provinsis.name as nama_prov',
+                'kabupatens.name as nama_kab',
+                'kecamatans.name as nama_kec',
                 'kelurahans.name as nama_desa'
             )
-        ->where('mahasiswa.id', $id)
-        ->first();
+            ->where('mahasiswa.id', $id)
+            ->first();
 
         $data['ortu'] = DB::table('ortu')
             ->leftJoin('mahasiswa', 'mahasiswa.id_ortu', 'ortu.id')
@@ -306,7 +307,7 @@ class PmbController extends Controller
 
     public function konfirmasiDaftar(Request $request)
     {
-        
+
         try {
             // Ambil mahasiswa yang sedang login
             $mahasiswa = Mahasiswa::find($request->mahasiswa_id);
@@ -322,8 +323,9 @@ class PmbController extends Controller
             return redirect(route('pmb.detail', ['id' => $request->mahasiswa_id]))->with('error', 'Gagal disimpan kesalahan data:'  . $e->getMessage());
         }
     }
-    
-      public function tolakPendaftaran(Request $request){
+
+    public function tolakPendaftaran(Request $request)
+    {
         try {
             // Ambil mahasiswa yang sedang login
             $mahasiswa = Mahasiswa::find($request->mahasiswa_id);

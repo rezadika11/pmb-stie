@@ -9,13 +9,13 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
-    {
-        $data['jmlUser'] = User::count();
-        $data['jmlMhs'] = User::where('roles', 'mhs')->count();
-        $data['jmlLaki'] = Mahasiswa::where('jenis_kelamin', 'L')->count();
-        $data['jmlP'] = Mahasiswa::where('jenis_kelamin', 'P')->count();
+        public function index()
+        {
+                $data['jmlUser'] = User::count();
+                $data['jmlMhs'] = User::where('roles', 'mhs')->count();
+                $data['jmlLaki'] = Mahasiswa::where('jenis_kelamin', 'L')->count();
+                $data['jmlP'] = Mahasiswa::where('jenis_kelamin', 'P')->count();
 
-        return view('backend.dashboard', $data);
-    }
+                return view('backend.dashboard', $data);
+        }
 }

@@ -21,23 +21,23 @@ class LaporanController extends Controller
     {
         $query = Mahasiswa::query()
             ->leftJoin('tahun_akademik', 'mahasiswa.id_tahun_akademik', 'tahun_akademik.id');
-    
+
         // Jika ada filter tahun akademik
         if ($request->has('tahun_akademik') && $request->tahun_akademik) {
             $query->where('tahun_akademik.kode', $request->tahun_akademik)
-                  ->where('mahasiswa.status_daftar', 1);
+                ->where('mahasiswa.status_daftar', 1);
         } else {
             // Jika tidak ada filter, tetap tampilkan hanya tahun akademik aktif
             $query->where('tahun_akademik.status', 1)
                 ->where('mahasiswa.status_daftar', 1);
         }
-    
+
         return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('ttl', function ($row) {
                 $tempat = $row->tempat_lahir;
                 $tanggal = Carbon::parse($row->tanggal_lahir)->translatedFormat('d F Y');
-                return $tempat.', ' . $tanggal;
+                return $tempat . ', ' . $tanggal;
             })
             ->addColumn('jenis_kelamin', function ($row) {
                 return $row->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan';
@@ -49,7 +49,7 @@ class LaporanController extends Controller
     {
         $tahun = TahunAkademik::all();
 
-        $tahunAktif = TahunAkademik::where('status',1)->first();
+        $tahunAktif = TahunAkademik::where('status', 1)->first();
 
         // $currentYear = date('Y');
         // $tahunAkademikOptions = [];
@@ -64,7 +64,7 @@ class LaporanController extends Controller
         //         'value' => $startYear . '/' . $endYear
         //     ];
         // }
-        return view('backend.admin.laporan.index', compact('tahun','tahunAktif'));
+        return view('backend.admin.laporan.index', compact('tahun', 'tahunAktif'));
     }
     // ->where('mahasiswa.status_daftar', 1);
     public function exportExcel(Request $request)
@@ -72,7 +72,7 @@ class LaporanController extends Controller
 
         $agamaMapping = [
             'islam' => 'Islam',
-            'kristen' => 'Kristen', 
+            'kristen' => 'Kristen',
             'katolik' => 'Katolik',
             'hindu' => 'Hindu',
             'buddha' => 'Buddha',
@@ -82,54 +82,54 @@ class LaporanController extends Controller
 
         $warga = ['wni' => 'WNI', 'wna' => 'WNA'];
         $kawin = ['blm' => 'Belum Menikah', 'nikah' => 'Menikah'];
-         //ayah
-         $didik_ayah = ['tdk_sekolah' => 'Tidak Sekolah', 'sd' => 'SD', 'smp' => 'SMP', 'sma' => 'SMA', 's1' => 'S1', 's2' => 'S2', 's3' => 'S3'];
-         $kerja_ayah = ['pns' => 'PNS', 'abri' => 'Abri', 'polri' => 'Polri', 'pensiunan' => 'Pensiunan', 'tani' => 'Petani/Nelayan', 'pegawai' => 'Pegawai Swasta', 'pedagang' => 'Pedagang / Pengusaha', 'tdk_keja' => 'Tidak Bekerja', 'dll' => 'Lainnya'];
-         $hasil_ayah = ['kurang_lima' => ' < 500.000', 'lima_sajuta' => '500.000 - 1.000.000', 'sajuta_tigajuta' => '1.000.000 - 3.000.000', 'tigajuta_limajuta' => '3.000.000 - 5.000.000', 'lebih_limajuta' => '> 5.000.000'];
- 
-         //ibu
-         $didik_ibu = ['tdk_sekolah' => 'Tidak Sekolah', 'sd' => 'SD', 'smp' => 'SMP', 'sma' => 'SMA', 's1' => 'S1', 's2' => 'S2', 's3' => 'S3'];
-         $kerja_ibu = ['pns' => 'PNS', 'abri' => 'Abri', 'polri' => 'Polri', 'pensiunan' => 'Pensiunan', 'tani' => 'Petani/Nelayan', 'pegawai' => 'Pegawai Swasta', 'pedagang' => 'Pedagang / Pengusaha', 'tdk_keja' => 'Tidak Bekerja', 'dll' => 'Lainnya'];
-         $hasil_ibu = ['kurang_lima' => ' < 500.000', 'lima_sajuta' => '500.000 - 1.000.000', 'sajuta_tigajuta' => '1.000.000 - 3.000.000', 'tigajuta_limajuta' => '3.000.000 - 5.000.000', 'lebih_limajuta' => '> 5.000.000'];
+        //ayah
+        $didik_ayah = ['tdk_sekolah' => 'Tidak Sekolah', 'sd' => 'SD', 'smp' => 'SMP', 'sma' => 'SMA', 's1' => 'S1', 's2' => 'S2', 's3' => 'S3'];
+        $kerja_ayah = ['pns' => 'PNS', 'abri' => 'Abri', 'polri' => 'Polri', 'pensiunan' => 'Pensiunan', 'tani' => 'Petani/Nelayan', 'pegawai' => 'Pegawai Swasta', 'pedagang' => 'Pedagang / Pengusaha', 'tdk_keja' => 'Tidak Bekerja', 'dll' => 'Lainnya'];
+        $hasil_ayah = ['kurang_lima' => ' < 500.000', 'lima_sajuta' => '500.000 - 1.000.000', 'sajuta_tigajuta' => '1.000.000 - 3.000.000', 'tigajuta_limajuta' => '3.000.000 - 5.000.000', 'lebih_limajuta' => '> 5.000.000'];
+
+        //ibu
+        $didik_ibu = ['tdk_sekolah' => 'Tidak Sekolah', 'sd' => 'SD', 'smp' => 'SMP', 'sma' => 'SMA', 's1' => 'S1', 's2' => 'S2', 's3' => 'S3'];
+        $kerja_ibu = ['pns' => 'PNS', 'abri' => 'Abri', 'polri' => 'Polri', 'pensiunan' => 'Pensiunan', 'tani' => 'Petani/Nelayan', 'pegawai' => 'Pegawai Swasta', 'pedagang' => 'Pedagang / Pengusaha', 'tdk_keja' => 'Tidak Bekerja', 'dll' => 'Lainnya'];
+        $hasil_ibu = ['kurang_lima' => ' < 500.000', 'lima_sajuta' => '500.000 - 1.000.000', 'sajuta_tigajuta' => '1.000.000 - 3.000.000', 'tigajuta_limajuta' => '3.000.000 - 5.000.000', 'lebih_limajuta' => '> 5.000.000'];
         //  $provinsiOrtuList= DB::table('provinsis')->get();
- 
-         //Prodi Pilih
-         $jenis_daftar = ['reguler' => 'Reguler', 'kip' => 'KIP'];
-         $kelas = ['pagi' => 'Kelas Pagi', 'sore' => 'Kelas Sore'];
-         $prodi = ['mnj' => 'Manajemen', 'akt' => 'Akutansi'];
-         
+
+        //Prodi Pilih
+        $jenis_daftar = ['reguler' => 'Reguler', 'kip' => 'KIP'];
+        $kelas = ['pagi' => 'Kelas Pagi', 'sore' => 'Kelas Sore'];
+        $prodi = ['mnj' => 'Manajemen', 'akt' => 'Akutansi'];
+
         // Query builder dengan join multiple tabel
-         // Query builder dengan join multiple tabel
+        // Query builder dengan join multiple tabel
         $query = Mahasiswa::query()
-        ->select(
-            'mahasiswa.*', 
-            'ortu.nama_ayah', 
-            'ortu.nama_ibu',
-            'ortu.pendidikan_ayah',
-            'ortu.pendidikan_ibu',
-            'ortu.pekerjaan_ayah',
-            'ortu.pekerjaan_ibu',
-            'ortu.penghasilan_ayah',
-            'ortu.penghasilan_ibu',
-            'ortu.alamat_ortu',
-            'provinsis.name as nama_provinsi',
-            'kabupatens.name as nama_kabupaten',
-            'kecamatans.name as nama_kecamatan',
-            'kelurahans.name as nama_desa'
-        )
-        ->leftJoin('ortu', 'mahasiswa.id_ortu', '=', 'ortu.id')
-        ->leftJoin('provinsis', 'mahasiswa.id_provinsi', '=', 'provinsis.id')
-        ->leftJoin('kabupatens', 'mahasiswa.id_kabupaten', '=', 'kabupatens.id')
-        ->leftJoin('kecamatans', 'mahasiswa.id_kecamatan', '=', 'kecamatans.id')
-        ->leftJoin('kelurahans', 'mahasiswa.id_desa', '=', 'kelurahans.id')
-        ->leftJoin('tahun_akademik', 'mahasiswa.id_tahun_akademik', '=', 'tahun_akademik.id')
-        ->where('tahun_akademik.status', 1)
-        ->where('mahasiswa.status_daftar', 1);
+            ->select(
+                'mahasiswa.*',
+                'ortu.nama_ayah',
+                'ortu.nama_ibu',
+                'ortu.pendidikan_ayah',
+                'ortu.pendidikan_ibu',
+                'ortu.pekerjaan_ayah',
+                'ortu.pekerjaan_ibu',
+                'ortu.penghasilan_ayah',
+                'ortu.penghasilan_ibu',
+                'ortu.alamat_ortu',
+                'provinsis.name as nama_provinsi',
+                'kabupatens.name as nama_kabupaten',
+                'kecamatans.name as nama_kecamatan',
+                'kelurahans.name as nama_desa'
+            )
+            ->leftJoin('ortu', 'mahasiswa.id_ortu', '=', 'ortu.id')
+            ->leftJoin('provinsis', 'mahasiswa.id_provinsi', '=', 'provinsis.id')
+            ->leftJoin('kabupatens', 'mahasiswa.id_kabupaten', '=', 'kabupatens.id')
+            ->leftJoin('kecamatans', 'mahasiswa.id_kecamatan', '=', 'kecamatans.id')
+            ->leftJoin('kelurahans', 'mahasiswa.id_desa', '=', 'kelurahans.id')
+            ->leftJoin('tahun_akademik', 'mahasiswa.id_tahun_akademik', '=', 'tahun_akademik.id')
+            ->where('tahun_akademik.status', 1)
+            ->where('mahasiswa.status_daftar', 1);
 
         // Filter tahun akademik jika ada
         if ($request->has('tahun_akademik') && $request->tahun_akademik) {
             $query->where('tahun_akademik.kode', $request->tahun_akademik)
-            ->where('mahasiswa.status_daftar', 1);
+                ->where('mahasiswa.status_daftar', 1);
         }
 
         $data = $query->get();
@@ -172,12 +172,30 @@ class LaporanController extends Controller
 
         // Header mulai dari baris ke-5
         $headers = [
-            'No', 'No Pendaftaran', 'Nama', 'Tempat Lahir', 'Tanggal Lahir', 
-            'Jenis Kelamin', 'NIK', 'Agama', 'Status Kawin', 
-            'Kewarganegaraan', 'Nama Ayah', 'Nama Ibu', 'Pendidikan Ayah', 
-            'Pendidikan Ibu', 'Pekerjaan Ayah', 'Pekerjaan Ibu', 
-            'Penghasilan Ayah', 'Penghasilan Ibu', 'Alamat Orang Tua', 
-            'Provinsi', 'Kabupaten', 'Kecamatan', 'Desa', 'Kode Pos', 
+            'No',
+            'No Pendaftaran',
+            'Nama',
+            'Tempat Lahir',
+            'Tanggal Lahir',
+            'Jenis Kelamin',
+            'NIK',
+            'Agama',
+            'Status Kawin',
+            'Kewarganegaraan',
+            'Nama Ayah',
+            'Nama Ibu',
+            'Pendidikan Ayah',
+            'Pendidikan Ibu',
+            'Pekerjaan Ayah',
+            'Pekerjaan Ibu',
+            'Penghasilan Ayah',
+            'Penghasilan Ibu',
+            'Alamat Orang Tua',
+            'Provinsi',
+            'Kabupaten',
+            'Kecamatan',
+            'Desa',
+            'Kode Pos',
             'No HP'
         ];
 
@@ -193,7 +211,7 @@ class LaporanController extends Controller
 
             // Nomor urut otomatis
             $sheet->setCellValue('A' . $rowNumber, $row + 1);
-            
+
             // Data mahasiswa
             $sheet->setCellValue('B' . $rowNumber, $item->no_pendaftaran);
             $sheet->setCellValue('C' . $rowNumber, $item->nama);
@@ -204,7 +222,7 @@ class LaporanController extends Controller
             $sheet->setCellValue('H' . $rowNumber, $agamaMapping[strtolower($item->agama)] ?? $item->agama);
             $sheet->setCellValue('I' . $rowNumber, $kawin[strtolower($item->status_kawin)] ?? $item->status_kawin);
             $sheet->setCellValue('J' . $rowNumber, $warga[strtolower($item->kewarganegaraan)] ?? $item->kewarganegaraan);
-            
+
             // Data orang tua
             $sheet->setCellValue('K' . $rowNumber, $item->nama_ayah);
             $sheet->setCellValue('L' . $rowNumber, $item->nama_ibu);

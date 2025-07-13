@@ -771,15 +771,15 @@ class FormulirController extends Controller
 
             // Simpan dokumen
             $bukti_pembayaran->save();
-            
-            // Ambil tahun akademik aktif
-              $ThnAkademik = DB::table('tahun_akademik')->where('status', 1)->first();
 
-              // Ambil tahun dari tanggal_mulai
-              $currentYear = Carbon::parse($ThnAkademik->tanggal_mulai)->year;
-  
-              // Generate nomor pendaftaran berdasarkan tahun akademik
-              $no_pendaftaran = $this->generateNoPendaftaran($currentYear);
+            // Ambil tahun akademik aktif
+            $ThnAkademik = DB::table('tahun_akademik')->where('status', 1)->first();
+
+            // Ambil tahun dari tanggal_mulai
+            $currentYear = Carbon::parse($ThnAkademik->tanggal_mulai)->year;
+
+            // Generate nomor pendaftaran berdasarkan tahun akademik
+            $no_pendaftaran = $this->generateNoPendaftaran($currentYear);
 
             // Update mahasiswa dengan id dokumen
             $mahasiswa->update([
@@ -820,7 +820,7 @@ class FormulirController extends Controller
         $data['prodi_studi'] = ['mnj' => 'Manajemen', 'akt' => 'Akutansi'];
 
         $data['logo'] = storage_path('img/logo-kop.png');
-        
+
         //   if (file_exists($logoPath)) {
         //         $data['logo'] = $logoPath;
         //     } else {
