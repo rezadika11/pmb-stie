@@ -1,0 +1,18 @@
+@extends('layouts.frontend.master')
+@section('title','Brosur')
+@section('content')
+<main class="main">
+    <section id="about" class="about section">
+        <div class="container">
+            <h2>{{ $data->name }}</h2>
+            <div class="content">
+                {!! $data->content !!}
+                <p>
+                    <a href="{{ route('downloadBrosur') }}" target="_blank">Brosur PMB {{ date('Y') }}</a>
+                </p>
+            </div>
+        </div>
+  
+      </section><!-- /About Section -->
+</main>
+@endsection
