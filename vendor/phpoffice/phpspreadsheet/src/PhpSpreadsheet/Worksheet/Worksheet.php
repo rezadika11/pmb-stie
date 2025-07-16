@@ -3,6 +3,7 @@
 namespace PhpOffice\PhpSpreadsheet\Worksheet;
 
 use ArrayObject;
+use Composer\Pcre\Preg;
 use Generator;
 use PhpOffice\PhpSpreadsheet\Calculation\Calculation;
 use PhpOffice\PhpSpreadsheet\Calculation\Functions;
@@ -48,6 +49,8 @@ class Worksheet
     public const MERGE_CELL_CONTENT_EMPTY = 'empty';
     public const MERGE_CELL_CONTENT_HIDE = 'hide';
     public const MERGE_CELL_CONTENT_MERGE = 'merge';
+
+    public const FUNCTION_LIKE_GROUPBY = '/\b(groupby|_xleta)\b/i'; // weird new syntax
 
     protected const SHEET_NAME_REQUIRES_NO_QUOTES = '/^[_\p{L}][_\p{L}\p{N}]*$/mui';
 
@@ -321,6 +324,7 @@ class Worksheet
     {
         // Set parent and title
         $this->parent = $parent;
+        $this->hash = spl_object_id($this);
         $this->setTitle($title, false);
         // setTitle can change $pTitle
         $this->setCodeName($this->getTitle());
@@ -349,7 +353,6 @@ class Worksheet
         $this->autoFilter = new AutoFilter('', $this);
         // Table collection
         $this->tableCollection = new ArrayObject();
-        $this->hash = spl_object_id($this);
     }
 
     /**
@@ -381,7 +384,6 @@ class Worksheet
     public function __wakeup(): void
     {
         $this->hash = spl_object_id($this);
-        $this->parent = null;
     }
 
     /**
@@ -869,7 +871,7 @@ class Worksheet
             // Syntax check
             self::checkSheetTitle($title);
 
-            if ($this->parent) {
+            if ($this->parent && $this->parent->getIndex($this, true) >= 0) {
                 // Is there already such sheet name?
                 if ($this->parent->sheetNameExists($title)) {
                     // Use name, but append with lowest possible integer
@@ -899,7 +901,7 @@ class Worksheet
         // Set title
         $this->title = $title;
 
-        if ($this->parent && $this->parent->getCalculationEngine()) {
+        if ($this->parent && $this->parent->getIndex($this, true) >= 0 && $this->parent->getCalculationEngine()) {
             // New title
             $newTitle = $this->getTitle();
             $this->parent->getCalculationEngine()
@@ -1203,8 +1205,8 @@ class Worksheet
                 throw new Exception('Sheet not found for name: ' . $worksheetReference[0]);
             }
         } elseif (
-            !preg_match('/^' . Calculation::CALCULATION_REGEXP_CELLREF . '$/i', $coordinate)
-            && preg_match('/^' . Calculation::CALCULATION_REGEXP_DEFINEDNAME . '$/iu', $coordinate)
+            !Preg::isMatch('/^' . Calculation::CALCULATION_REGEXP_CELLREF . '$/i', $coordinate)
+            && Preg::isMatch('/^' . Calculation::CALCULATION_REGEXP_DEFINEDNAME . '$/iu', $coordinate)
         ) {
             // Named range?
             $namedRange = $this->validateNamedRange($coordinate, true);
@@ -1333,6 +1335,13 @@ class Worksheet
         return $this->rowDimensions[$row];
     }
 
+    public function getRowStyle(int $row): ?Style
+    {
+        return $this->parent?->getCellXfByIndexOrNull(
+            ($this->rowDimensions[$row] ?? null)?->getXfIndex()
+        );
+    }
+
     public function rowDimensionExists(int $row): bool
     {
         return isset($this->rowDimensions[$row]);
@@ -1376,6 +1385,13 @@ class Worksheet
         return $this->getColumnDimension(Coordinate::stringFromColumnIndex($columnIndex));
     }
 
+    public function getColumnStyle(string $column): ?Style
+    {
+        return $this->parent?->getCellXfByIndexOrNull(
+            ($this->columnDimensions[$column] ?? null)?->getXfIndex()
+        );
+    }
+
     /**
      * Get styles.
      *
@@ -1389,7 +1405,7 @@ class Worksheet
     /**
      * Get style for cell.
      *
-     * @param AddressRange<CellAddress>|array{0: int, 1: int, 2: int, 3: int}|array{0: int, 1: int}|CellAddress|int|string $cellCoordinate
+     * @param AddressRange<CellAddress>|AddressRange<int>|AddressRange<string>|array{0: int, 1: int, 2: int, 3: int}|array{0: int, 1: int}|CellAddress|int|string $cellCoordinate
      *              A simple string containing a cell address like 'A1' or a cell range like 'A1:E10'
      *              or passing in an array of [$fromColumnIndex, $fromRow, $toColumnIndex, $toRow] (e.g. [3, 5, 6, 8]),
      *              or a CellAddress or AddressRange object.
@@ -1693,7 +1709,7 @@ class Worksheet
     /**
      * Set merge on a cell range.
      *
-     * @param AddressRange<CellAddress>|array{0: int, 1: int, 2: int, 3: int}|array{0: int, 1: int}|string $range A simple string containing a Cell range like 'A1:E10'
+     * @param AddressRange<CellAddress>|AddressRange<int>|AddressRange<string>|array{0: int, 1: int, 2: int, 3: int}|array{0: int, 1: int}|string $range A simple string containing a Cell range like 'A1:E10'
      *              or passing in an array of [$fromColumnIndex, $fromRow, $toColumnIndex, $toRow] (e.g. [3, 5, 6, 8]),
      *              or an AddressRange.
      * @param string $behaviour How the merged cells should behave.
@@ -1712,7 +1728,7 @@ class Worksheet
             $range .= ":{$range}";
         }
 
-        if (preg_match('/^([A-Z]+)(\\d+):([A-Z]+)(\\d+)$/', $range, $matches) !== 1) {
+        if (!Preg::isMatch('/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/', $range, $matches)) {
             throw new Exception('Merge must be on a valid range of cells.');
         }
 
@@ -1818,7 +1834,7 @@ class Worksheet
     /**
      * Remove merge on a cell range.
      *
-     * @param AddressRange<CellAddress>|array{0: int, 1: int, 2: int, 3: int}|array{0: int, 1: int}|string $range A simple string containing a Cell range like 'A1:E10'
+     * @param AddressRange<CellAddress>|AddressRange<int>|AddressRange<string>|array{0: int, 1: int, 2: int, 3: int}|array{0: int, 1: int}|string $range A simple string containing a Cell range like 'A1:E10'
      *              or passing in an array of [$fromColumnIndex, $fromRow, $toColumnIndex, $toRow] (e.g. [3, 5, 6, 8]),
      *              or an AddressRange.
      *
@@ -1869,7 +1885,7 @@ class Worksheet
     /**
      * Set protection on a cell or cell range.
      *
-     * @param AddressRange<CellAddress>|array{0: int, 1: int, 2: int, 3: int}|array{0: int, 1: int}|CellAddress|int|string $range A simple string containing a Cell range like 'A1:E10'
+     * @param AddressRange<CellAddress>|AddressRange<int>|AddressRange<string>|array{0: int, 1: int, 2: int, 3: int}|array{0: int, 1: int}|CellAddress|int|string $range A simple string containing a Cell range like 'A1:E10'
      *              or passing in an array of [$fromColumnIndex, $fromRow, $toColumnIndex, $toRow] (e.g. [3, 5, 6, 8]),
      *              or a CellAddress or AddressRange object.
      * @param string $password Password to unlock the protection
@@ -1892,7 +1908,7 @@ class Worksheet
     /**
      * Remove protection on a cell or cell range.
      *
-     * @param AddressRange<CellAddress>|array{0: int, 1: int, 2: int, 3: int}|array{0: int, 1: int}|CellAddress|int|string $range A simple string containing a Cell range like 'A1:E10'
+     * @param AddressRange<CellAddress>|AddressRange<int>|AddressRange<string>|array{0: int, 1: int, 2: int, 3: int}|array{0: int, 1: int}|CellAddress|int|string $range A simple string containing a Cell range like 'A1:E10'
      *              or passing in an array of [$fromColumnIndex, $fromRow, $toColumnIndex, $toRow] (e.g. [3, 5, 6, 8]),
      *              or a CellAddress or AddressRange object.
      *
@@ -1950,7 +1966,7 @@ class Worksheet
     /**
      * Set AutoFilter.
      *
-     * @param AddressRange<CellAddress>|array{0: int, 1: int, 2: int, 3: int}|array{0: int, 1: int}|AutoFilter|string $autoFilterOrRange
+     * @param AddressRange<CellAddress>|AddressRange<int>|AddressRange<string>|array{0: int, 1: int, 2: int, 3: int}|array{0: int, 1: int}|AutoFilter|string $autoFilterOrRange
      *            A simple string containing a Cell range like 'A1:E10' is permitted for backward compatibility
      *              or passing in an array of [$fromColumnIndex, $fromRow, $toColumnIndex, $toRow] (e.g. [3, 5, 6, 8]),
      *              or an AddressRange.
@@ -2348,6 +2364,42 @@ class Worksheet
         if ($row < 1) {
             throw new Exception('Rows to be deleted should at least start from row 1.');
         }
+        $startRow = $row;
+        $endRow = $startRow + $numberOfRows - 1;
+        $removeKeys = [];
+        $addKeys = [];
+        foreach ($this->mergeCells as $key => $value) {
+            if (
+                Preg::isMatch(
+                    '/^([a-z]{1,3})(\d+):([a-z]{1,3})(\d+)/i',
+                    $key,
+                    $matches
+                )
+            ) {
+                $startMergeInt = (int) $matches[2];
+                $endMergeInt = (int) $matches[4];
+                if ($startMergeInt >= $startRow) {
+                    if ($startMergeInt <= $endRow) {
+                        $removeKeys[] = $key;
+                    }
+                } elseif ($endMergeInt >= $startRow) {
+                    if ($endMergeInt <= $endRow) {
+                        $temp = $endMergeInt - 1;
+                        $removeKeys[] = $key;
+                        if ($temp !== $startMergeInt) {
+                            $temp3 = $matches[1] . $matches[2] . ':' . $matches[3] . $temp;
+                            $addKeys[] = $temp3;
+                        }
+                    }
+                }
+            }
+        }
+        foreach ($removeKeys as $key) {
+            unset($this->mergeCells[$key]);
+        }
+        foreach ($addKeys as $key) {
+            $this->mergeCells[$key] = $key;
+        }
 
         $holdRowDimensions = $this->removeRowDimensions($row, $numberOfRows);
         $highestRow = $this->getHighestDataRow();
@@ -2403,6 +2455,43 @@ class Worksheet
     {
         if (is_numeric($column)) {
             throw new Exception('Column references should not be numeric.');
+        }
+        $startColumnInt = Coordinate::columnIndexFromString($column);
+        $endColumnInt = $startColumnInt + $numberOfColumns - 1;
+        $removeKeys = [];
+        $addKeys = [];
+        foreach ($this->mergeCells as $key => $value) {
+            if (
+                Preg::isMatch(
+                    '/^([a-z]{1,3})(\d+):([a-z]{1,3})(\d+)/i',
+                    $key,
+                    $matches
+                )
+            ) {
+                $startMergeInt = Coordinate::columnIndexFromString($matches[1]);
+                $endMergeInt = Coordinate::columnIndexFromString($matches[3]);
+                if ($startMergeInt >= $startColumnInt) {
+                    if ($startMergeInt <= $endColumnInt) {
+                        $removeKeys[] = $key;
+                    }
+                } elseif ($endMergeInt >= $startColumnInt) {
+                    if ($endMergeInt <= $endColumnInt) {
+                        $temp = Coordinate::columnIndexFromString($matches[3]) - 1;
+                        $temp2 = Coordinate::stringFromColumnIndex($temp);
+                        $removeKeys[] = $key;
+                        if ($temp2 !== $matches[1]) {
+                            $temp3 = $matches[1] . $matches[2] . ':' . $temp2 . $matches[4];
+                            $addKeys[] = $temp3;
+                        }
+                    }
+                }
+            }
+        }
+        foreach ($removeKeys as $key) {
+            unset($this->mergeCells[$key]);
+        }
+        foreach ($addKeys as $key) {
+            $this->mergeCells[$key] = $key;
         }
 
         $highestColumn = $this->getHighestDataColumn();
@@ -2696,7 +2785,7 @@ class Worksheet
     /**
      * Select a range of cells.
      *
-     * @param AddressRange<CellAddress>|array{0: int, 1: int, 2: int, 3: int}|array{0: int, 1: int}|CellAddress|int|string $coordinate A simple string containing a Cell range like 'A1:E10'
+     * @param AddressRange<CellAddress>|AddressRange<int>|AddressRange<string>|array{0: int, 1: int, 2: int, 3: int}|array{0: int, 1: int}|CellAddress|int|string $coordinate A simple string containing a Cell range like 'A1:E10'
      *              or passing in an array of [$fromColumnIndex, $fromRow, $toColumnIndex, $toRow] (e.g. [3, 5, 6, 8]),
      *              or a CellAddress or AddressRange object.
      *
@@ -3569,7 +3658,7 @@ class Worksheet
 
     public static function nameRequiresQuotes(string $sheetName): bool
     {
-        return preg_match(self::SHEET_NAME_REQUIRES_NO_QUOTES, $sheetName) !== 1;
+        return !Preg::isMatch(self::SHEET_NAME_REQUIRES_NO_QUOTES, $sheetName);
     }
 
     public function isRowVisible(int $row): bool
@@ -3701,7 +3790,9 @@ class Worksheet
             $keys = $this->cellCollection->getCoordinates();
             foreach ($keys as $key) {
                 if ($this->getCell($key)->getDataType() === DataType::TYPE_FORMULA) {
-                    $this->getCell($key)->getCalculatedValue();
+                    if (!Preg::isMatch(self::FUNCTION_LIKE_GROUPBY, $this->getCell($key)->getValue())) {
+                        $this->getCell($key)->getCalculatedValue();
+                    }
                 }
             }
         }

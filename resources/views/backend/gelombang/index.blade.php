@@ -7,13 +7,16 @@
 <link rel="stylesheet" href="{{ asset('backend/vendor/datepicker/jquery-ui.css') }}">
 <style>
     .table-responsive {
-    overflow-x: auto !important; /* Pastikan ada scroll jika konten lebih lebar */
-}
+        overflow-x: auto !important;
+        /* Pastikan ada scroll jika konten lebih lebar */
+    }
 
-#dataTable {
-    table-layout: fixed !important; /* Menghindari kolom lebar otomatis */
-    width: 100% !important; /* Pastikan tabel memenuhi lebar kontainer */
-}
+    #dataTable {
+        table-layout: fixed !important;
+        /* Menghindari kolom lebar otomatis */
+        width: 100% !important;
+        /* Pastikan tabel memenuhi lebar kontainer */
+    }
 </style>
 @endpush
 @section('content')
@@ -28,7 +31,8 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                       <button type="button" id="modalTahun" class="btn btn-sm btn-primary"><i class="bi bi-plus-square"></i> Tambah</button>
+                        <button type="button" id="modalTahun" class="btn btn-sm btn-primary"><i
+                                class="bi bi-plus-square"></i> Tambah</button>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -40,7 +44,6 @@
                                         <th>Tahun Akademik</th>
                                         <th>Tanggal Mulai</th>
                                         <th>Tanggal Selesai</th>
-                                        <th>Biaya</th>
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
@@ -59,8 +62,8 @@
 <script src="{{ asset('backend/vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
 <script src="{{ asset('backend/vendor/toastr/js/toastr.min.js') }}"></script>
 <script src="{{ asset('backend/vendor/datepicker/jquery-ui.js') }}"></script>
-    <script>
-      $(document).ready(function() {
+<script>
+    $(document).ready(function() {
 
         $("#tglMulai").datepicker({
             changeMonth: true,
@@ -117,10 +120,6 @@
                     name: 'tanggal_selesai',
                 },
                 {
-                    data: 'biaya', 
-                    name: 'biaya',
-                },
-                {
                     data: 'action', 
                     name: 'action', 
                     orderable: false, 
@@ -154,7 +153,6 @@
                 $('#nama_gelombang').val(data.nama_gelombang);
                 $('#tglMulai').val(data.tanggal_mulai);
                 $('#tglSelesai').val(data.tanggal_selesai);
-                $('#biaya').val(data.biaya);
             })
         });
 
@@ -259,5 +257,5 @@
         @endif
 
       });
-    </script>
+</script>
 @endpush

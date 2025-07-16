@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
+use App\Models\BiayaProdi;
 use App\Models\Dokumen;
 use App\Models\Gelombang;
 use App\Models\Mahasiswa;
@@ -797,9 +798,12 @@ class FormulirController extends Controller
             ->join('kabupatens', 'kabupatens.id', 'mahasiswa.id_kabupaten')
             ->join('kecamatans', 'kecamatans.id', 'mahasiswa.id_kecamatan')
             ->join('kelurahans', 'kelurahans.id', 'mahasiswa.id_desa')
-            ->select('mahasiswa.nama as nama_lengkap', 'mahasiswa.id_gelombang', 'mahasiswa.nik', 'mahasiswa.no_pendaftaran', 'mahasiswa.jenis_kelamin', 'mahasiswa.tempat_lahir', 'mahasiswa.tanggal_lahir', 'program_studi.program_studi as nama_prodi', 'program_studi.jenis_pendaftaran as jalur_masuk', 'mahasiswa.alamat', 'kelurahans.name as nama_desa', 'kecamatans.name as nama_kec', 'kabupatens.name as nama_kab', 'provinsis.name as nama_prov', 'mahasiswa.no_hp', 'dokumen.pas_foto')
+            ->select('mahasiswa.nama as nama_lengkap', 'mahasiswa.id_gelombang', 'mahasiswa.id_program_studi', 'mahasiswa.nik', 'mahasiswa.no_pendaftaran', 'mahasiswa.jenis_kelamin', 'mahasiswa.tempat_lahir', 'mahasiswa.tanggal_lahir', 'program_studi.program_studi as nama_prodi', 'program_studi.jenis_pendaftaran as jalur_masuk', 'mahasiswa.alamat', 'kelurahans.name as nama_desa', 'kecamatans.name as nama_kec', 'kabupatens.name as nama_kab', 'provinsis.name as nama_prov', 'mahasiswa.no_hp', 'dokumen.pas_foto')
             ->where('id_user', Auth::user()->id)
             ->first();
+
+        // Flag untuk mahasiswa KIP
+        $isKipStudent = $data['mahasiswa']->jalur_masuk === 'kip';
 
         $data['jk'] = ['L' => 'Laki-laki', 'P' => 'Perempuan'];
         $data['jenis_daftar'] = ['reguler' => 'Reguler', 'kip' => 'KIP'];
@@ -810,17 +814,66 @@ class FormulirController extends Controller
 
         $data['gelombang'] = DB::table('gelombangs')
             ->join('tahun_akademik', 'tahun_akademik.id', 'gelombangs.id_tahun_akademik')
-            ->select('gelombangs.biaya', 'gelombangs.nama_gelombang')
+            ->select('gelombangs.nama_gelombang')
             ->where('gelombangs.id', $data['mahasiswa']->id_gelombang)
             ->first();
 
-        //   if (file_exists($logoPath)) {
-        //         $data['logo'] = $logoPath;
-        //     } else {
-        //         // Fallback jika file tidak ditemukan
-        //         $data['logo'] = null;
-        //     }
+        // Ambil biaya dinamis berdasarkan gelombang dan program studi
+        // Konversi id_program_studi ke kode program studi
+        $prodiCode = $data['mahasiswa']->id_program_studi == 1 ? 'mnj' : 'akt';
+        $biayaProdi = BiayaProdi::where('id_gelombang', $data['mahasiswa']->id_gelombang)
+            ->where('program_studi', $prodiCode)
+            ->first();
 
+        if ($biayaProdi) {
+            // Jika mahasiswa KIP dan biaya gratis untuk KIP, set semua biaya ke 0
+            if ($isKipStudent && $biayaProdi->gratis_untuk_kip) {
+                $data['biaya'] = [
+                    'pendaftaran' => 0,
+                    'tri_dharma' => 0,
+                    'ospek' => 0,
+                    'spp' => 0,
+                    'sks' => 0,
+                    'total' => 0
+                ];
+            } else {
+                $data['biaya'] = [
+                    'pendaftaran' => $biayaProdi->biaya_pendaftaran,
+                    'tri_dharma' => $biayaProdi->biaya_tri_dharma,
+                    'ospek' => $biayaProdi->biaya_ospek,
+                    'spp' => $biayaProdi->biaya_spp,
+                    'sks' => $biayaProdi->biaya_sks,
+                    'total' => $biayaProdi->total_biaya
+                ];
+            }
+        } else {
+            // Fallback ke biaya lama jika belum ada data biaya baru
+            if ($isKipStudent) {
+                // Untuk mahasiswa KIP tanpa data biaya, set semua ke 0
+                $data['biaya'] = [
+                    'pendaftaran' => 0,
+                    'tri_dharma' => 0,
+                    'ospek' => 0,
+                    'spp' => 0,
+                    'sks' => 0,
+                    'total' => 0
+                ];
+            } else {
+                $gelombangBiaya = DB::table('gelombangs')
+                    ->select('biaya')
+                    ->where('id', $data['mahasiswa']->id_gelombang)
+                    ->first();
+
+                $data['biaya'] = [
+                    'pendaftaran' => 0,
+                    'tri_dharma' => 0,
+                    'ospek' => 0,
+                    'spp' => $gelombangBiaya->biaya ?? 0,
+                    'sks' => 0,
+                    'total' => $gelombangBiaya->biaya ?? 0
+                ];
+            }
+        }
 
         $pdf = PDF::loadView('backend.mhs.download-pembayaran', $data)->setPaper('A4')
             ->setOption('margin-top', 10)

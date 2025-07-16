@@ -50,9 +50,6 @@ class GelombangController extends Controller
                         // Format tanggal_selesai menjadi dd-mm-yy
                         return Carbon::parse($row->tanggal_selesai)->format('d-m-Y');
                     })
-                    ->editColumn('biaya', function ($row) {
-                        return 'Rp ' . number_format($row->biaya, 0, ',', '.');
-                    })
                     ->addColumn('action', function ($row) {
                         $btn = '<a href="javascript:void(0)" data-id="' . $row->id . '" class="btn-edit btn btn-success btn-sm"><i class="bi bi-pencil"></i> Edit</a>';
                         // if (!$row->status) {
@@ -129,9 +126,6 @@ class GelombangController extends Controller
                 'date',
                 'after_or_equal:tanggal_mulai',
             ],
-            'biaya' => [
-                'required',
-            ]
         ];
 
         $messages = [
@@ -145,7 +139,7 @@ class GelombangController extends Controller
             'tanggal_selesai.required' => 'Tanggal selesai harus diisi.',
             'tanggal_selesai.date' => 'Tanggal selesai harus berupa tanggal.',
             'tanggal_selesai.after_or_equal' => 'Tanggal selesai harus setelah atau sama dengan tanggal mulai.',
-            'biaya.required' => 'Biaya per semester harus diisi.',
+
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
@@ -175,7 +169,6 @@ class GelombangController extends Controller
                     'id_tahun_akademik' => $request->id_tahun_akademik, // Fixed field name
                     'tanggal_mulai' => $request->tanggal_mulai,
                     'tanggal_selesai' => $request->tanggal_selesai,
-                    'biaya' => $request->biaya
                 ]);
                 session()->flash('success', 'Gelombang berhasil diperbarui.');
             } else {
@@ -185,7 +178,6 @@ class GelombangController extends Controller
                     'id_tahun_akademik' => $request->id_tahun_akademik, // Fixed field name
                     'tanggal_mulai' => $request->tanggal_mulai,
                     'tanggal_selesai' => $request->tanggal_selesai,
-                    'biaya' => $request->biaya
                 ]);
 
                 session()->flash('success', 'Gelombang berhasil disimpan.');

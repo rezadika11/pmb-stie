@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Formulir Pendaftaran</title>
@@ -9,7 +10,8 @@
             margin: 10mm;
         }
 
-        html, body {
+        html,
+        body {
             width: 210mm;
             height: 297mm;
             margin: 0;
@@ -34,7 +36,8 @@
 
         .foto-container {
             text-align: left;
-            vertical-align: top; /* Menjaga foto sejajar dengan teks */
+            vertical-align: top;
+            /* Menjaga foto sejajar dengan teks */
         }
 
         .foto-container img {
@@ -87,21 +90,22 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
-        <img src="{{$logo}}" width="80mm" height="80mm" style="float:left;"/>
+        <img src="{{$logo}}" width="80mm" height="80mm" style="float:left;" />
         <div style="text-align:center; font-size:12pt; font-weight: bold;">
-          BUKTI PENDAFTARAN MAHASISWA BARU
+            BUKTI PENDAFTARAN MAHASISWA BARU
         </div>
         <div style="text-align:center; font-size:13pt; font-weight: bold;">
             SEKOLAH TINGGI ILMU EKONOMI TAMANSISWA BANJARNEGARA
         </div>
         <div style="text-align:center; font-size:9pt;">
             Jl. Mayjend Panjaitan No.29, Telp (0286) 595043, Banjarnegara 53414
-          <br />Website: www.stietambara.ac.id&nbsp;&nbsp;Email: info@stietambara.ac.id
+            <br />Website: www.stietambara.ac.id&nbsp;&nbsp;Email: info@stietambara.ac.id
         </div>
         <div style="margin-top:15px">
-            <hr style="border:0.3mm solid;"/>
+            <hr style="border:0.3mm solid;" />
         </div>
         <br />
 
@@ -109,11 +113,12 @@
             <tr>
                 <td class="foto-container" style="width: 35mm; height: 50mm;">
                     @if($mahasiswa->pas_foto)
-                        <img src="{{ storage_path('app/public/' . $mahasiswa->pas_foto) }}" alt="Pas Foto">
+                    <img src="{{ storage_path('app/public/' . $mahasiswa->pas_foto) }}" alt="Pas Foto">
                     @else
-                        <div style="width:35mm;height:50mm;border:0.5px solid #000;display:flex;justify-content:center;align-items:center;">
-                            Foto
-                        </div>
+                    <div
+                        style="width:35mm;height:50mm;border:0.5px solid #000;display:flex;justify-content:center;align-items:center;">
+                        Foto
+                    </div>
                     @endif
                 </td>
                 <td class="data-cell">
@@ -133,7 +138,7 @@
                         <tr>
                             <td class=" label">Tempat, Tanggal Lahir</td>
                             <td class="data-cell">
-                                {{ $mahasiswa->tempat_lahir }}, 
+                                {{ $mahasiswa->tempat_lahir }},
                                 {{ \Carbon\Carbon::parse($mahasiswa->tanggal_lahir)->format('d F Y') }}
                             </td>
                         </tr>
@@ -148,10 +153,10 @@
                         <tr>
                             <td class="label">Alamat</td>
                             <td class="data-cell">
-                                {{ $mahasiswa->alamat }}, 
-                                {{ $mahasiswa->nama_desa }}, 
-                                {{ $mahasiswa->nama_kec }}, 
-                                {{ $mahasiswa->nama_kab }}, 
+                                {{ $mahasiswa->alamat }},
+                                {{ $mahasiswa->nama_desa }},
+                                {{ $mahasiswa->nama_kec }},
+                                {{ $mahasiswa->nama_kab }},
                                 {{ $mahasiswa->nama_prov }}
                             </td>
                         </tr>
@@ -173,13 +178,40 @@
                             <td class="label">Gelombang</td>
                             <td class="data-cell">{{ $gelombang->nama_gelombang ?? '-' }}</td>
                         </tr>
+                        @if($mahasiswa->jalur_masuk !== 'kip')
                         <tr>
-                            <td class="label">Biaya per semester</td>
-                            <td class="data-cell">Rp {{ number_format($gelombang->biaya ?? 0, 0, ',', '.') }}</td>
+                            <td class="label">Biaya Pendaftaran</td>
+                            <td class="data-cell">Rp {{ number_format($biaya['pendaftaran'] ?? 0, 0, ',', '.') }}</td>
                         </tr>
+                        <tr>
+                            <td class="label">Biaya Tri Dharma</td>
+                            <td class="data-cell">Rp {{ number_format($biaya['tri_dharma'] ?? 0, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Biaya Ospek</td>
+                            <td class="data-cell">Rp {{ number_format($biaya['ospek'] ?? 0, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Biaya SPP</td>
+                            <td class="data-cell">Rp {{ number_format($biaya['spp'] ?? 0, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Biaya SKS</td>
+                            <td class="data-cell">Rp {{ number_format($biaya['sks'] ?? 0, 0, ',', '.') }}</td>
+                        </tr>
+                        <tr style="border-top: 2px solid #000; font-weight: bold;">
+                            <td class="label">Total Biaya</td>
+                            <td class="data-cell">Rp {{ number_format($biaya['total'] ?? 0, 0, ',', '.') }}</td>
+                        </tr>
+                        @else
+                        <tr>
+                            <td class="label">Status Pembayaran</td>
+                            <td class="data-cell" style="color: green; font-weight: bold;">KIP</td>
+                        </tr>
+                        @endif
                     </table>
                 </td>
-        
+
                 <!-- Kolom Kanan: Tanda Tangan -->
                 <td style="width: 50%; text-align: right; vertical-align: top; margin-top:-50px">
                     <p>{{ $mahasiswa->nama_kab }}, {{ \Carbon\Carbon::now()->format('d F Y') }}</p>
@@ -188,8 +220,9 @@
                     <p><strong>{{ $mahasiswa->nama_lengkap }}</strong></p>
                 </td>
             </tr>
-        </table>        
-             
+        </table>
+
     </div>
 </body>
+
 </html>

@@ -12,37 +12,43 @@
                     <h3>@yield('title')</h3>
                 </div>
             </div>
-        {{-- </div> --}}
+            {{--
+        </div> --}}
 
         <div class="row">
             <div class="col-12">
                 <div class="card">
                     {{-- <div class="card-header">
-                       <a href="" class="btn btn-sm btn-primary"><i class="bi bi-plus-square"></i> Tambah</a>
+                        <a href="" class="btn btn-sm btn-primary"><i class="bi bi-plus-square"></i> Tambah</a>
                     </div> --}}
                     <div class="card-body">
                         <div class="basic-form">
                             <form id="formSimpan">
                                 @csrf
                                 <div class="form-group row">
-                                    <label class="col-sm-2 col-form-label text-dark">Judul<span class="text-danger">*</span></label>
+                                    <label class="col-sm-2 col-form-label text-dark">Judul<span
+                                            class="text-danger">*</span></label>
                                     <div class="col-sm-10">
-                                        <input type="text" id="name" name="name" class="form-control" placeholder="Masukan Judul" autofocus>
+                                        <input type="text" id="name" name="name" class="form-control"
+                                            placeholder="Masukan Judul" autofocus>
                                         <div class="name-error text-danger"></div>
                                     </div>
                                 </div>
                                 <div class="form-group row">
-                                    <label for="" class="col-sm-2 col-form-label text-dark">Isi<span class="text-danger">*</span></label>
+                                    <label for="" class="col-sm-2 col-form-label text-dark">Isi<span
+                                            class="text-danger">*</span></label>
                                     <div class="col-sm-10">
-                                       <textarea id="editor" name="content">
+                                        <textarea id="editor" name="content">
                                        </textarea>
-                                       <div class="content-error text-danger"></div>
+                                        <div class="content-error text-danger"></div>
                                     </div>
                                 </div>
                                 <div class="form-group row">
                                     <div class="col-sm-10">
-                                        <button type="submit" class="btn btn-primary"><i class="bi bi-floppy"></i> Simpan</button>
-                                        <a href="{{ route('registrasi.index') }}" class="btn btn-light">Kembali <i class="bi bi-arrow-right"></i></a>
+                                        <button type="submit" class="btn btn-primary"><i class="bi bi-floppy"></i>
+                                            Simpan</button>
+                                        <a href="{{ route('registrasi.index') }}" class="btn btn-light">Kembali <i
+                                                class="bi bi-arrow-right"></i></a>
                                     </div>
                                 </div>
                             </form>
@@ -58,7 +64,7 @@
 <script src="{{ asset('backend/vendor/tinymce/tinymce.min.js') }}"></script>
 <script src="{{ asset('backend/vendor/toastr/js/toastr.min.js') }}"></script>
 <script>
- tinymce.init({
+    tinymce.init({
             selector: '#editor',  // Ganti ini sesuai dengan ID textarea Anda
             license_key: 'gpl',
             plugins: [

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Backend\Admin\LaporanController;
 use App\Http\Controllers\Backend\Admin\PmbController;
 use App\Http\Controllers\Backend\BannerController;
+use App\Http\Controllers\Backend\BiayaProdiController;
 use App\Http\Controllers\Backend\BrosurController;
 use App\Http\Controllers\Backend\ContactController;
 use App\Http\Controllers\Backend\DashboardController;
@@ -131,6 +132,16 @@ Route::prefix('superadmin')->middleware(['auth', 'role:superadmin'])->group(func
         Route::get('/edit/{id}', 'edit')->name('edit');
         Route::get('/datatable', 'datatable')->name('datatable');
         Route::post('/set-aktif/{id}', 'setAktif')->name('setAktif');
+    });
+
+    Route::prefix('biaya-prodi')->controller(BiayaProdiController::class)->name('biaya_prodi.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/datatable', 'getData')->name('datatable');
+        Route::get('/tambah', 'create')->name('create');
+        Route::post('/store', 'store')->name('store');
+        Route::get('/edit/{id}', 'edit')->name('edit');
+        Route::put('/update/{id}', 'update')->name('update');
+        Route::delete('/{id}', 'destroy')->name('destroy');
     });
 
     Route::get('/profil', [SuperadminProfilController::class, 'edit'])->name('superadmin.profile');
