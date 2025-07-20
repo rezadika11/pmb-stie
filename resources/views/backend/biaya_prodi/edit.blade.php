@@ -25,6 +25,7 @@
         padding-left: 35px;
     }
 </style>
+
 @endpush
 
 @section('content')
@@ -65,6 +66,26 @@
                                     </div>
                                 </div>
 
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="jenis_kelas">Jenis Kelas <span class="text-danger">*</span></label>
+                                        <select name="jenis_kelas" id="jenis_kelas"
+                                            class="form-control @error('jenis_kelas') is-invalid @enderror" required>
+                                            <option value="">Pilih Jenis Kelas</option>
+                                            @foreach($jenis_kelas as $kode => $nama)
+                                            <option value="{{ $kode }}" {{ (old('jenis_kelas', $biayaProdi->jenis_kelas) == $kode) ? 'selected' : '' }}>
+                                                {{ $nama }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                        @error('jenis_kelas')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="program_studi">Program Studi <span
@@ -152,9 +173,9 @@
                             </div>
 
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-6" id="biaya_sks_container">
                                     <div class="form-group">
-                                        <label for="biaya_sks">Biaya SKS <span class="text-danger">*</span></label>
+                                        <label for="biaya_sks">Biaya SKS <span class="text-danger" id="biaya_sks_required">*</span></label>
                                         <div class="currency-input">
                                             <input type="number" name="biaya_sks" id="biaya_sks"
                                                 class="form-control @error('biaya_sks') is-invalid @enderror"
@@ -163,6 +184,7 @@
                                         @error('biaya_sks')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
+                                        <small class="text-muted" id="biaya_sks_note" style="display: none;">Untuk kelas sore, biaya SKS tidak diperlukan karena menggunakan sistem SPP tetap</small>
                                     </div>
                                 </div>
 
@@ -210,6 +232,16 @@
                                 <td>{{ $biayaProdi->gelombang->nama_gelombang }}</td>
                             </tr>
                             <tr>
+                                <td><strong>Jenis Kelas:</strong></td>
+                                <td>
+                                    @if($biayaProdi->jenis_kelas === 'sore')
+                                    <span class="badge badge-warning">Sore</span>
+                                    @else
+                                    <span class="badge badge-primary">Pagi</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            <tr>
                                 <td><strong>Program Studi:</strong></td>
                                 <td>{{ $biayaProdi->nama_program_studi }}</td>
                             </tr>
@@ -252,6 +284,42 @@
             let value = $(this).val();
             if (value < 0) {
                 $(this).val(0);
+            }
+        });
+
+        // Handle jenis kelas change untuk biaya SKS
+        $('#jenis_kelas').on('change', function() {
+            const jenisKelas = $(this).val();
+            const biayaSksInput = $('#biaya_sks');
+            const biayaSksRequired = $('#biaya_sks_required');
+            const biayaSksNote = $('#biaya_sks_note');
+            
+            if (jenisKelas === 'sore') {
+                // Untuk kelas sore, disable field biaya SKS dan set ke 0
+                biayaSksInput.prop('readonly', true).removeAttr('required').val(0);
+                biayaSksRequired.hide();
+                biayaSksNote.show();
+            } else {
+                // Untuk kelas pagi, enable field biaya SKS dan wajib diisi
+                biayaSksInput.prop('readonly', false).attr('required', true);
+                biayaSksRequired.show();
+                biayaSksNote.hide();
+                if (biayaSksInput.val() == 0) {
+                    biayaSksInput.val('');
+                }
+            }
+        });
+
+        // Trigger change event on page load
+        $('#jenis_kelas').trigger('change');
+
+        // Before form submission, ensure biaya_sks has a value for 'sore' class
+        $('form').on('submit', function() {
+            const jenisKelas = $('#jenis_kelas').val();
+            const biayaSksInput = $('#biaya_sks');
+            
+            if (jenisKelas === 'sore' && (biayaSksInput.val() === '' || biayaSksInput.val() === null)) {
+                biayaSksInput.val(0);
             }
         });
 

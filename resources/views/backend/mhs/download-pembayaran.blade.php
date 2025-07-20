@@ -144,7 +144,12 @@
                         </tr>
                         <tr>
                             <td class="label">Program Studi</td>
-                            <td class="data-cell">{{ $prodi_studi[$mahasiswa->nama_prodi] }}</td>
+                            <td class="data-cell">
+                                {{ $prodi_studi[$mahasiswa->nama_prodi] }}
+                                @if(isset($jenis_kelas_display))
+                                    ({{ $jenis_kelas_display }})
+                                @endif
+                            </td>
                         </tr>
                         <tr>
                             <td class="label">Jalur Masuk</td>

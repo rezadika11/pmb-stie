@@ -36,6 +36,9 @@ class BiayaProdiController extends Controller
                 ->addColumn('program_studi', function ($row) {
                     return $row->nama_program_studi;
                 })
+                ->addColumn('jenis_kelas', function ($row) {
+                    return ucfirst($row->jenis_kelas);
+                })
                 ->addColumn('biaya_pendaftaran_formatted', function ($row) {
                     return 'Rp ' . number_format($row->biaya_pendaftaran, 0, ',', '.');
                 })
@@ -83,30 +86,51 @@ class BiayaProdiController extends Controller
         // Prodi Pilih
         $prodi_studi = ['mnj' => 'Manajemen', 'akt' => 'Akuntansi'];
 
-        return view('backend.biaya_prodi.create', compact('gelombangs', 'prodi_studi'));
+        // Jenis Kelas
+        $jenis_kelas = ['pagi' => 'Pagi', 'sore' => 'Sore'];
+
+        return view('backend.biaya_prodi.create', compact('gelombangs', 'prodi_studi', 'jenis_kelas'));
     }
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        // Set biaya_sks to 0 if jenis_kelas is 'sore' and biaya_sks is null or empty
+        if ($request->jenis_kelas === 'sore' && (is_null($request->biaya_sks) || $request->biaya_sks === '')) {
+            $request->merge(['biaya_sks' => 0]);
+        }
+
+        $rules = [
             'id_gelombang' => 'required|exists:gelombangs,id',
             'program_studi' => 'required|in:mnj,akt',
+            'jenis_kelas' => 'required|in:pagi,sore',
             'biaya_pendaftaran' => 'required|min:0',
             'biaya_tri_dharma' => 'required|min:0',
             'biaya_ospek' => 'required|min:0',
             'biaya_spp' => 'required|min:0',
-            'biaya_sks' => 'required|min:0',
             'gratis_untuk_kip' => 'nullable'
-        ], [
+        ];
+
+        // Add biaya_sks validation only for 'pagi' class
+        if ($request->jenis_kelas === 'pagi') {
+            $rules['biaya_sks'] = 'required|min:0';
+        } else {
+            $rules['biaya_sks'] = 'nullable|min:0';
+        }
+
+        $messages = [
             'id_gelombang.required' => 'Gelombang harus dipilih',
             'program_studi.required' => 'Program Studi harus dipilih',
             'program_studi.in' => 'Program Studi harus Manajemen atau Akuntansi',
+            'jenis_kelas.required' => 'Jenis kelas harus dipilih',
+            'jenis_kelas.in' => 'Jenis kelas harus Pagi atau Sore',
             'biaya_pendaftaran.required' => 'Biaya pendaftaran harus diisi',
             'biaya_tri_dharma.required' => 'Biaya Tri Dharma harus diisi',
             'biaya_ospek.required' => 'Biaya Ospek harus diisi',
             'biaya_spp.required' => 'Biaya SPP harus diisi',
-            'biaya_sks.required' => 'Biaya SKS harus diisi',
-        ]);
+            'biaya_sks.required' => 'Biaya SKS harus diisi untuk kelas pagi',
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             return redirect()->back()
@@ -115,20 +139,22 @@ class BiayaProdiController extends Controller
         }
 
         try {
-            // Cek apakah kombinasi gelombang dan prodi sudah ada
+            // Cek apakah kombinasi gelombang, prodi, dan jenis kelas sudah ada
             $exists = BiayaProdi::where('id_gelombang', $request->id_gelombang)
                 ->where('program_studi', $request->program_studi)
+                ->where('jenis_kelas', $request->jenis_kelas)
                 ->exists();
 
             if ($exists) {
                 return redirect()->back()
-                    ->with('error', 'Biaya untuk gelombang dan program studi ini sudah ada!')
+                    ->with('error', 'Biaya untuk gelombang, program studi, dan jenis kelas ini sudah ada!')
                     ->withInput();
             }
 
             BiayaProdi::create([
                 'id_gelombang' => $request->id_gelombang,
                 'program_studi' => $request->program_studi,
+                'jenis_kelas' => $request->jenis_kelas,
                 'biaya_pendaftaran' => $request->biaya_pendaftaran,
                 'biaya_tri_dharma' => $request->biaya_tri_dharma,
                 'biaya_ospek' => $request->biaya_ospek,
@@ -155,56 +181,79 @@ class BiayaProdiController extends Controller
         // Prodi Pilih
         $prodi_studi = ['mnj' => 'Manajemen', 'akt' => 'Akuntansi'];
 
-        return view('backend.biaya_prodi.edit', compact('biayaProdi', 'gelombangs', 'prodi_studi'));
+        // Jenis Kelas
+        $jenis_kelas = ['pagi' => 'Pagi', 'sore' => 'Sore'];
+
+        return view('backend.biaya_prodi.edit', compact('biayaProdi', 'gelombangs', 'prodi_studi', 'jenis_kelas'));
     }
 
     public function update(Request $request, $id)
     {
-
         $biayaProdi = BiayaProdi::findOrFail($id);
 
-        $validator = Validator::make($request->all(), [
+        // Set biaya_sks to 0 if jenis_kelas is 'sore' and biaya_sks is null or empty
+        if ($request->jenis_kelas === 'sore' && (is_null($request->biaya_sks) || $request->biaya_sks === '')) {
+            $request->merge(['biaya_sks' => 0]);
+        }
+
+        $rules = [
             'id_gelombang' => 'required|exists:gelombangs,id',
             'program_studi' => 'required|in:mnj,akt',
+            'jenis_kelas' => 'required|in:pagi,sore',
             'biaya_pendaftaran' => 'required|min:0',
             'biaya_tri_dharma' => 'required|min:0',
             'biaya_ospek' => 'required|min:0',
             'biaya_spp' => 'required|min:0',
-            'biaya_sks' => 'required|min:0',
             'gratis_untuk_kip' => 'nullable'
-        ], [
+        ];
+
+        // Add biaya_sks validation only for 'pagi' class
+        if ($request->jenis_kelas === 'pagi') {
+            $rules['biaya_sks'] = 'required|min:0';
+        } else {
+            $rules['biaya_sks'] = 'nullable|min:0';
+        }
+
+        $messages = [
             'id_gelombang.required' => 'Gelombang harus dipilih',
             'program_studi.required' => 'Program Studi harus dipilih',
             'program_studi.in' => 'Program Studi harus Manajemen atau Akuntansi',
+            'jenis_kelas.required' => 'Jenis kelas harus dipilih',
+            'jenis_kelas.in' => 'Jenis kelas harus Pagi atau Sore',
             'biaya_pendaftaran.required' => 'Biaya pendaftaran harus diisi',
             'biaya_tri_dharma.required' => 'Biaya Tri Dharma harus diisi',
             'biaya_ospek.required' => 'Biaya Ospek harus diisi',
             'biaya_spp.required' => 'Biaya SPP harus diisi',
-            'biaya_sks.required' => 'Biaya SKS harus diisi',
-        ]);
+            'biaya_sks.required' => 'Biaya SKS harus diisi untuk kelas pagi',
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
+            dd($validator->errors());
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
         }
 
         try {
-            // Cek apakah kombinasi gelombang dan prodi sudah ada (kecuali data yang sedang diedit)
+            // Cek apakah kombinasi gelombang, prodi, dan jenis kelas sudah ada (kecuali data yang sedang diedit)
             $exists = BiayaProdi::where('id_gelombang', $request->id_gelombang)
                 ->where('program_studi', $request->program_studi)
+                ->where('jenis_kelas', $request->jenis_kelas)
                 ->where('id', '!=', $id)
                 ->exists();
 
             if ($exists) {
                 return redirect()->back()
-                    ->with('error', 'Biaya untuk gelombang dan program studi ini sudah ada!')
+                    ->with('error', 'Biaya untuk gelombang, program studi, dan jenis kelas ini sudah ada!')
                     ->withInput();
             }
 
             $biayaProdi->update([
                 'id_gelombang' => $request->id_gelombang,
                 'program_studi' => $request->program_studi,
+                'jenis_kelas' => $request->jenis_kelas,
                 'biaya_pendaftaran' => $request->biaya_pendaftaran,
                 'biaya_tri_dharma' => $request->biaya_tri_dharma,
                 'biaya_ospek' => $request->biaya_ospek,

@@ -14,6 +14,7 @@ class BiayaProdi extends Model
     protected $fillable = [
         'id_gelombang',
         'program_studi',
+        'jenis_kelas',
         'biaya_pendaftaran',
         'biaya_tri_dharma',
         'biaya_ospek',
@@ -61,13 +62,22 @@ class BiayaProdi extends Model
     }
 
     /**
-     * Mendapatkan biaya berdasarkan gelombang dan program studi
+     * Mendapatkan biaya berdasarkan gelombang, program studi, dan jenis kelas
      */
-    public static function getBiayaByGelombangProdi($idGelombang, $programStudi)
+    public static function getBiayaByGelombangProdiKelas($idGelombang, $programStudi, $jenisKelas = 'pagi')
     {
         return self::where('id_gelombang', $idGelombang)
             ->where('program_studi', $programStudi)
+            ->where('jenis_kelas', $jenisKelas)
             ->first();
+    }
+
+    /**
+     * Mendapatkan biaya berdasarkan gelombang dan program studi (backward compatibility)
+     */
+    public static function getBiayaByGelombangProdi($idGelombang, $programStudi)
+    {
+        return self::getBiayaByGelombangProdiKelas($idGelombang, $programStudi, 'pagi');
     }
 
     /**

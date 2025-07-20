@@ -818,12 +818,33 @@ class FormulirController extends Controller
             ->where('gelombangs.id', $data['mahasiswa']->id_gelombang)
             ->first();
 
-        // Ambil biaya dinamis berdasarkan gelombang dan program studi
+        // Ambil biaya dinamis berdasarkan gelombang, program studi, dan jenis kelas
         // Konversi id_program_studi ke kode program studi
         $prodiCode = $data['mahasiswa']->id_program_studi == 1 ? 'mnj' : 'akt';
+        
+        // Ambil jenis kelas dari data program_studi mahasiswa
+        $programStudi = DB::table('program_studi')
+            ->where('id', $data['mahasiswa']->id_program_studi)
+            ->first();
+        
+        $jenisKelas = $programStudi ? $programStudi->jenis_kelas : 'pagi';
+        
+        // Set jenis kelas untuk ditampilkan di PDF
+        $data['jenis_kelas_display'] = $jenisKelas === 'pagi' ? 'kelas pagi' : 'kelas sore';
+        
         $biayaProdi = BiayaProdi::where('id_gelombang', $data['mahasiswa']->id_gelombang)
             ->where('program_studi', $prodiCode)
+            ->where('jenis_kelas', $jenisKelas)
             ->first();
+            
+        // Jika tidak ditemukan dengan jenis kelas, coba cari tanpa jenis kelas (backward compatibility)
+        if (!$biayaProdi) {
+            $biayaProdi = BiayaProdi::where('id_gelombang', $data['mahasiswa']->id_gelombang)
+                ->where('program_studi', $prodiCode)
+                ->whereNull('jenis_kelas')
+                ->orWhere('jenis_kelas', 'pagi')
+                ->first();
+        }
 
         if ($biayaProdi) {
             // Jika mahasiswa KIP dan biaya gratis untuk KIP, set semua biaya ke 0

@@ -53,6 +53,7 @@
                                         <th width="5%">No.</th>
                                         <th>Gelombang</th>
                                         <th>Program Studi</th>
+                                        <th>Jenis Kelas</th>
                                         <th>Pendaftaran</th>
                                         <th>Tri Dharma</th>
                                         <th>Ospek</th>
@@ -103,6 +104,7 @@
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                 { data: 'gelombang_info', name: 'gelombang.nama_gelombang' },
                 { data: 'program_studi', name: 'prodi.program_studi' },
+                { data: 'jenis_kelas', name: 'jenis_kelas' },
                 { data: 'biaya_pendaftaran_formatted', name: 'biaya_pendaftaran' },
                 { data: 'biaya_tri_dharma_formatted', name: 'biaya_tri_dharma' },
                 { data: 'biaya_ospek_formatted', name: 'biaya_ospek' },
